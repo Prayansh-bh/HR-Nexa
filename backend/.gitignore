@@ -1,0 +1,21 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Build & Dependencies
+node_modules/
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# Storage & Temp
+uploads/
+uploads_backup*/
+backups/
+*.db

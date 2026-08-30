@@ -1,0 +1,5 @@
+export const EMAIL_CONSTANTS = {
+  CONNECTION_TIMEOUT_MS: 10000, // 10 seconds
+  MAX_RETRY_ATTEMPTS: 3,
+  RETRY_DELAY_MS: 2000, // 2 seconds
+};
