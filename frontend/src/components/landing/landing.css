@@ -1,0 +1,307 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Landing Page Scoped Styles */
+.landing-page {
+  font-family: 'Inter', sans-serif;
+  background: #ffffff;
+  color: #0F172A;
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing-page h1,
+.landing-page h2,
+.landing-page h3,
+.landing-page h4,
+.landing-page h5,
+.landing-page h6,
+.landing-page .font-display {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Marquee animation */
+@keyframes landingMarquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.landing-page .animate-marquee {
+  animation: landingMarquee 30s linear infinite;
+}
+
+/* Fade up animation */
+@keyframes landingFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-page .fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.landing-page .fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Counter animation */
+@keyframes landingCountUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Gradient text */
+.landing-page .gradient-text {
+  background: linear-gradient(135deg, #2563EB 0%, #06B6D4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glassmorphism */
+.landing-page .glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Card hover */
+.landing-page .card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.landing-page .card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(37, 99, 235, 0.12);
+}
+
+/* Tab active indicator */
+.landing-page .tab-active {
+  position: relative;
+}
+.landing-page .tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #2563EB;
+  border-radius: 2px;
+}
+
+/* Accordion */
+.landing-page .accordion-content {
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+
+/* Timeline */
+.landing-page .timeline-connector {
+  position: absolute;
+  top: 20px;
+  left: calc(50% + 20px);
+  right: calc(50% - 100% + 20px);
+  height: 2px;
+  background: linear-gradient(90deg, #2563EB, #06B6D4);
+}
+
+/* Glow effect */
+.landing-page .glow-blue {
+  box-shadow: 0 0 30px rgba(37, 99, 235, 0.2);
+}
+
+/* Hero gradient background */
+.landing-page .hero-bg {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(37, 99, 235, 0.08) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 80% 50%, rgba(6, 182, 212, 0.06) 0%, transparent 50%),
+              #ffffff;
+}
+
+/* Section divider */
+.landing-page .section-divider {
+  background: linear-gradient(90deg, transparent, #E2E8F0, transparent);
+  height: 1px;
+  width: 100%;
+}
+
+/* Enhanced Animations */
+@keyframes landingFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes landingShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes landingPulseOrb {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+.landing-page .animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-page .animate-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-100%);
+  animation: landingShimmer 3.5s infinite;
+}
+
+.landing-page .spotlight-card {
+  position: relative;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.landing-page .spotlight-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(37, 99, 235, 0.35), transparent 60%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.landing-page .spotlight-card:hover::before {
+  opacity: 1;
+}
+
+.landing-page .animated-orb {
+  animation: landingPulseOrb 6s ease-in-out infinite;
+}
+
+/* Disable enhanced animations when toggle is OFF */
+.landing-page.no-enhanced-animations .animate-shimmer::after,
+.landing-page.no-enhanced-animations .spotlight-card::before,
+.landing-page.no-enhanced-animations .animated-orb {
+  animation: none !important;
+  display: none !important;
+}
+
+/* Dynamic CTA Background Aura & Grid Animations */
+@keyframes ctaPulseGlow {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.35) rotate(180deg);
+    opacity: 0.85;
+  }
+}
+
+@keyframes ctaOrbit1 {
+  0% {
+    transform: translate(-20%, -25%) scale(1);
+    opacity: 0.5;
+  }
+  33% {
+    transform: translate(20%, -10%) scale(1.3);
+    opacity: 0.85;
+  }
+  66% {
+    transform: translate(-10%, 20%) scale(0.9);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-20%, -25%) scale(1);
+    opacity: 0.5;
+  }
+}
+
+@keyframes ctaOrbit2 {
+  0% {
+    transform: translate(20%, 25%) scale(1);
+    opacity: 0.5;
+  }
+  33% {
+    transform: translate(-20%, 15%) scale(1.25);
+    opacity: 0.8;
+  }
+  66% {
+    transform: translate(15%, -15%) scale(0.92);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate(20%, 25%) scale(1);
+    opacity: 0.5;
+  }
+}
+
+@keyframes ctaOrbit3 {
+  0%, 100% {
+    transform: translate(-50%, 0%) scale(0.9);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate(-50%, -30%) scale(1.3);
+    opacity: 0.8;
+  }
+}
+
+/* Floating CTA Bubbles */
+@keyframes landingFloatBubble1 {
+  0%, 100% {
+    transform: translate(-30%, -30%) scale(1);
+  }
+  50% {
+    transform: translate(-18%, -18%) scale(1.12);
+  }
+}
+
+@keyframes landingFloatBubble2 {
+  0%, 100% {
+    transform: translate(25%, 25%) scale(1);
+  }
+  50% {
+    transform: translate(12%, 12%) scale(1.15);
+  }
+}
+
+@keyframes landingFloatBubble3 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(40px, -35px) scale(1.12);
+  }
+  66% {
+    transform: translate(-30px, 25px) scale(0.9);
+  }
+}
+
+@keyframes landingFloatBubble4 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(-35px, 35px) scale(0.92);
+  }
+  66% {
+    transform: translate(35px, -30px) scale(1.1);
+  }
+}

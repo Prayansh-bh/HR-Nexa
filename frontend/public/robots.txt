@@ -1,0 +1,13 @@
+# HR NEXA Search Engine Crawler Configuration
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /forgot-password
+
+# Disallow authenticated application and token-bound routes
+Disallow: /_app/
+Disallow: /impersonate
+Disallow: /reset-password
+Disallow: /verify-email
+
+Sitemap: https://app.hrnexa.com/sitemap.xml

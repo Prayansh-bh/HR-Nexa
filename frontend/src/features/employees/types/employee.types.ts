@@ -1,0 +1,36 @@
+export type Employee = {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  designation: string;
+  status: "Active" | "On Leave" | "Inactive";
+  joined: string;
+  salary: number;
+  avatar: string;
+  phone?: string;
+  address?: string;
+  dob?: string;
+  gender?: string;
+  uan?: string;
+  esic?: string;
+  pan?: string;
+  aadhaar?: string;
+  location?: string;
+  maritalStatus?: string;
+  bloodGroup?: string;
+  passportNumber?: string;
+  personalEmail?: string;
+  permanentAddress?: string;
+  emergencyContactNamePrimary?: string;
+  emergencyContactRelPrimary?: string;
+  emergencyContactPhonePrimary?: string;
+  emergencyContactNameSecondary?: string;
+  emergencyContactRelSecondary?: string;
+  emergencyContactPhoneSecondary?: string;
+  photoData?: string;
+  photoRotation?: number;
+};
+
+export type CreateEmployeePayload = Omit<Employee, "id"> & { id?: string };
+export type UpdateEmployeePayload = Partial<CreateEmployeePayload>;

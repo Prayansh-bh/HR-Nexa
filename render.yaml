@@ -1,0 +1,33 @@
+# Render Infrastructure as Code (Blueprint)
+# Documentation: https://render.com/docs/yaml
+
+services:
+  # HR Nexa NestJS Backend Web Service
+  - type: web
+    name: hr-nexa-backend
+    env: node
+    rootDir: backend
+    plan: free # or starter / standard
+    buildCommand: npm install && npm run build && npm run db:migrate
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # Set in Render Dashboard to your PostgreSQL connection string
+      - key: JWT_EXPIRATION
+        value: 1d
+      - key: ALLOWED_ORIGINS
+        value: "https://app.hrnexa.com,https://owner.hrnexa.com"
+      - key: RAZORPAY_KEY_ID
+        sync: false # Set in Render Dashboard to your live Razorpay Key ID
+      - key: RAZORPAY_KEY_SECRET
+        sync: false # Set in Render Dashboard to your live Razorpay Key Secret
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false # Set in Render Dashboard to your live Razorpay Webhook Secret
+
