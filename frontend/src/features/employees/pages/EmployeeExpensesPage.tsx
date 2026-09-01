@@ -81,8 +81,9 @@ export function EmployeeExpensesPage({ toast }: { toast: (m: string) => void }) 
       formData.append("category", "EXPENSE_RECEIPT");
       formData.append("docType", "Expense Receipt");
       formData.append("title", file.name);
-      if (user?.employee?.id) {
-        formData.append("employeeId", user.employee.id);
+      const targetEmpId = user?.employeeId || (user as any)?.employee?.id;
+      if (targetEmpId) {
+        formData.append("employeeId", targetEmpId);
       }
 
       const uploadedDoc = await uploadDocument(formData);
