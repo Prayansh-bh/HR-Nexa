@@ -81,7 +81,8 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
         container: mapContainerRef.current,
         style: MAP_STYLE_URL,
         center: currentCenter,
-        zoom: hasValidCoords ? DEFAULT_MAP_ZOOM : 15,
+        zoom: hasValidCoords ? DEFAULT_MAP_ZOOM : 14,
+        maxZoom: 19,
         attributionControl: { compact: true },
       });
 
@@ -91,6 +92,25 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
       );
 
       mapRef.current = map;
+
+      const triggerDeferredFitBounds = () => {
+        const currentMap = mapRef.current;
+        const container = mapContainerRef.current;
+        if (
+          currentMap &&
+          container &&
+          container.clientWidth > 0 &&
+          container.clientHeight > 0 &&
+          hasValidCoords &&
+          !lastFitBoundsRef.current
+        ) {
+          try {
+            const bbox = getBoundingBoxForRadius([parsedLng, parsedLat], safeRadius);
+            currentMap.fitBounds(bbox, { padding: 45, maxZoom: 17, duration: 600 });
+            lastFitBoundsRef.current = { lat: parsedLat, lng: parsedLng, radius: safeRadius };
+          } catch {}
+        }
+      };
 
       map.on('load', () => {
         setIsMapReady(true);
@@ -156,24 +176,38 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
           markerRef.current = marker;
         }
 
-        // Initial radius fit bounds
+        // Initial radius fit bounds (only if container has non-zero layout dimensions)
         if (hasValidCoords) {
-          const bbox = getBoundingBoxForRadius([parsedLng, parsedLat], safeRadius);
-          map.fitBounds(bbox, { padding: 45, maxZoom: 17, duration: 600 });
-          lastFitBoundsRef.current = { lat: parsedLat, lng: parsedLng, radius: safeRadius };
+          const container = mapContainerRef.current;
+          if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+            const bbox = getBoundingBoxForRadius([parsedLng, parsedLat], safeRadius);
+            map.fitBounds(bbox, { padding: 45, maxZoom: 17, duration: 600 });
+            lastFitBoundsRef.current = { lat: parsedLat, lng: parsedLng, radius: safeRadius };
+          }
         }
       });
+
+      if (typeof map.once === 'function') {
+        map.once('idle', () => {
+          if (mapRef.current && typeof mapRef.current.resize === 'function') {
+            mapRef.current.resize();
+            triggerDeferredFitBounds();
+          }
+        });
+      }
 
       // Staggered resize calls to handle modal mounting animations (fade-in & zoom-in)
       resizeTimer1 = setTimeout(() => {
         if (mapRef.current && typeof mapRef.current.resize === 'function') {
           mapRef.current.resize();
+          triggerDeferredFitBounds();
         }
       }, 150);
 
       resizeTimer2 = setTimeout(() => {
         if (mapRef.current && typeof mapRef.current.resize === 'function') {
           mapRef.current.resize();
+          triggerDeferredFitBounds();
         }
       }, 350);
 
@@ -182,6 +216,7 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
         resizeObserver = new ResizeObserver(() => {
           if (mapRef.current && typeof mapRef.current.resize === 'function') {
             mapRef.current.resize();
+            triggerDeferredFitBounds();
           }
         });
         resizeObserver.observe(mapContainerRef.current);
@@ -286,11 +321,14 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
         Math.abs(lastFit.lng - parsedLng) > 0.005;
 
       if (shouldFitBounds && isMapReady && typeof map.fitBounds === 'function') {
-        try {
-          const bbox = getBoundingBoxForRadius(targetLngLat, safeRadius);
-          map.fitBounds(bbox, { padding: 45, maxZoom: 17, duration: 600 });
-          lastFitBoundsRef.current = { lat: parsedLat, lng: parsedLng, radius: safeRadius };
-        } catch {}
+        const container = mapContainerRef.current;
+        if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+          try {
+            const bbox = getBoundingBoxForRadius(targetLngLat, safeRadius);
+            map.fitBounds(bbox, { padding: 45, maxZoom: 17, duration: 600 });
+            lastFitBoundsRef.current = { lat: parsedLat, lng: parsedLng, radius: safeRadius };
+          } catch {}
+        }
       }
     } else {
       // Remove marker if coordinates become empty
@@ -515,11 +553,15 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
       )}
 
       {/* MapLibre Canvas Container */}
-      <div className="relative w-full h-64 sm:h-72 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 shadow-inner">
+      <div
+        className="relative w-full h-64 sm:h-72 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 shadow-inner"
+        style={{ minHeight: '280px', width: '100%' }}
+      >
         <div
           ref={mapContainerRef}
           data-testid="maplibre-container"
           className="w-full h-full"
+          style={{ minHeight: '280px', width: '100%', height: '100%' }}
         />
 
         {/* Interactive Helper Overlay Tag */}

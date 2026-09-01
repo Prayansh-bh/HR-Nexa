@@ -41,6 +41,7 @@ const mockMap = {
   flyTo: vi.fn(),
   fitBounds: vi.fn(),
   remove: vi.fn(),
+  resize: vi.fn(),
   loaded: vi.fn().mockReturnValue(true),
   isStyleLoaded: vi.fn().mockReturnValue(true),
   on: vi.fn().mockImplementation(function (this: any, event: string, handler: Function) {
@@ -49,6 +50,11 @@ const mockMap = {
     if (event === 'load') {
       handler();
     }
+    return this;
+  }),
+  once: vi.fn().mockImplementation(function (this: any, event: string, handler: Function) {
+    if (!mapEventHandlers[event]) mapEventHandlers[event] = [];
+    mapEventHandlers[event].push(handler);
     return this;
   }),
 };
@@ -89,9 +95,19 @@ describe('GeoZoneMapPicker - MapLibre + OpenFreeMap Bright Forensic Suite', () =
     vi.clearAllMocks();
     for (const k of Object.keys(mapEventHandlers)) delete mapEventHandlers[k];
     for (const k of Object.keys(markerEventHandlers)) delete markerEventHandlers[k];
+
+    // Emulate non-zero rendered container dimensions in JSDOM
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      value: 500,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      value: 300,
+    });
   });
 
-  it('1. MapLibre initialization: Initializes map with OpenFreeMap Bright style at street-level zoom (16)', () => {
+  it('1. MapLibre initialization: Initializes map with OpenFreeMap Bright style at native zoom (14) with maxZoom (19)', () => {
     const handleLocationChange = vi.fn();
 
     render(
@@ -103,15 +119,19 @@ describe('GeoZoneMapPicker - MapLibre + OpenFreeMap Bright Forensic Suite', () =
       />,
     );
 
-    expect(screen.getByTestId('maplibre-container')).toBeInTheDocument();
+    const container = screen.getByTestId('maplibre-container');
+    expect(container).toBeInTheDocument();
+    expect(container).toHaveStyle({ minHeight: '280px', width: '100%', height: '100%' });
     expect(maplibregl.Map).toHaveBeenCalledWith(
       expect.objectContaining({
         style: MAP_STYLE_URL,
         center: [73.8567, 18.5204],
         zoom: DEFAULT_MAP_ZOOM,
+        maxZoom: 19,
         attributionControl: { compact: true },
       }),
     );
+    expect(mockMap.resize).toHaveBeenCalled();
     expect(maplibregl.Marker).toHaveBeenCalledWith(
       expect.objectContaining({
         draggable: true,
@@ -335,5 +355,39 @@ describe('GeoZoneMapPicker - MapLibre + OpenFreeMap Bright Forensic Suite', () =
   it('8. Zero Google Maps dependency: Confirms zero Google Maps globals or keys are expected or required', () => {
     expect((window as any).google).toBeUndefined();
     expect(import.meta.env.VITE_GOOGLE_MAPS_API_KEY).toBeUndefined();
+  });
+
+  it('9. MapLibre cleanup lifecycle: Calls remove on Map and Marker on component unmount', () => {
+    const handleLocationChange = vi.fn();
+
+    const { unmount } = render(
+      <GeoZoneMapPicker
+        latitude={18.5204}
+        longitude={73.8567}
+        radiusMeters={150}
+        onLocationChange={handleLocationChange}
+      />,
+    );
+
+    unmount();
+
+    expect(mockMarker.remove).toHaveBeenCalled();
+    expect(mockMap.remove).toHaveBeenCalled();
+  });
+
+  it('10. Container Inline Dimensions: Outer and inner containers enforce explicit minimum dimensions', () => {
+    const handleLocationChange = vi.fn();
+
+    render(
+      <GeoZoneMapPicker
+        latitude=""
+        longitude=""
+        radiusMeters={150}
+        onLocationChange={handleLocationChange}
+      />,
+    );
+
+    const container = screen.getByTestId('maplibre-container');
+    expect(container).toHaveStyle({ minHeight: '280px', width: '100%', height: '100%' });
   });
 });
