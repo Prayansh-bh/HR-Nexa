@@ -72,6 +72,9 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
     if (!mapContainerRef.current) return;
 
     let map: maplibregl.Map;
+    let resizeTimer1: ReturnType<typeof setTimeout> | null = null;
+    let resizeTimer2: ReturnType<typeof setTimeout> | null = null;
+    let resizeObserver: ResizeObserver | null = null;
 
     try {
       map = new maplibregl.Map({
@@ -92,6 +95,11 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
       map.on('load', () => {
         setIsMapReady(true);
         setMapError(null);
+
+        // Synchronize canvas dimensions with modal container
+        if (typeof map.resize === 'function') {
+          map.resize();
+        }
 
         // Add Geofence Circle GeoJSON source and layers
         const initialCenter: [number, number] = hasValidCoords
@@ -156,6 +164,29 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
         }
       });
 
+      // Staggered resize calls to handle modal mounting animations (fade-in & zoom-in)
+      resizeTimer1 = setTimeout(() => {
+        if (mapRef.current && typeof mapRef.current.resize === 'function') {
+          mapRef.current.resize();
+        }
+      }, 150);
+
+      resizeTimer2 = setTimeout(() => {
+        if (mapRef.current && typeof mapRef.current.resize === 'function') {
+          mapRef.current.resize();
+        }
+      }, 350);
+
+      // ResizeObserver to continuously track container dimension changes
+      if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+        resizeObserver = new ResizeObserver(() => {
+          if (mapRef.current && typeof mapRef.current.resize === 'function') {
+            mapRef.current.resize();
+          }
+        });
+        resizeObserver.observe(mapContainerRef.current);
+      }
+
       // Map Click to place / move location
       map.on('click', (e) => {
         if (disabled) return;
@@ -179,6 +210,11 @@ export const GeoZoneMapPicker: React.FC<GeoZoneMapPickerProps> = ({
     }
 
     return () => {
+      if (resizeTimer1) clearTimeout(resizeTimer1);
+      if (resizeTimer2) clearTimeout(resizeTimer2);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (markerRef.current) {
         try {
           markerRef.current.remove();
