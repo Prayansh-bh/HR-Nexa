@@ -181,6 +181,67 @@ export class ReviewCycleService {
       throw new NotFoundException(`Review cycle with ID ${id} not found`);
     }
 
+    // State machine transition validation
+    if (data.status !== undefined && data.status !== cycle.status) {
+      const ALLOWED_CYCLE_TRANSITIONS: Record<string, string[]> = {
+        Draft: ['Scheduled', 'Active', 'Cancelled'],
+        Scheduled: ['Draft', 'Active', 'Cancelled'],
+        Active: ['Completed', 'Cancelled'],
+        Completed: ['Archived'],
+        Archived: [],
+        Cancelled: [],
+      };
+
+      const allowedTargets = ALLOWED_CYCLE_TRANSITIONS[cycle.status] || [];
+      if (!allowedTargets.includes(data.status)) {
+        throw new BadRequestException(
+          `Cannot transition review cycle from "${cycle.status}" to "${data.status}".`,
+        );
+      }
+    }
+
+    // Immutability checks on finalized states
+    if (data.status === undefined || data.status === cycle.status) {
+      if (cycle.status === 'Archived' || cycle.status === 'Cancelled') {
+        throw new BadRequestException(
+          `Cannot modify a ${cycle.status.toLowerCase()} review cycle.`,
+        );
+      }
+      if (cycle.status === 'Completed') {
+        throw new BadRequestException(
+          `Cannot modify a completed review cycle unless archiving it.`,
+        );
+      }
+    }
+
+    const startDate = data.startDate || cycle.startDate;
+    const endDate = data.endDate || cycle.endDate;
+    const deadline = data.deadline || cycle.deadline;
+
+    if (data.startDate || data.endDate || data.deadline) {
+      const startTime = new Date(startDate).getTime();
+      const endTime = new Date(endDate).getTime();
+      const deadlineTime = new Date(deadline).getTime();
+
+      if (isNaN(startTime) || isNaN(endTime) || isNaN(deadlineTime)) {
+        throw new BadRequestException(
+          'Invalid date format: startDate, endDate, and deadline must be valid ISO date strings.',
+        );
+      }
+
+      if (startTime >= endTime) {
+        throw new BadRequestException(
+          'Cycle startDate must be strictly before endDate.',
+        );
+      }
+
+      if (deadlineTime < endTime) {
+        throw new BadRequestException(
+          'Cycle deadline cannot be earlier than endDate.',
+        );
+      }
+    }
+
     const updated = await this.repository.update(id, companyId, {
       name: data.name !== undefined ? data.name : cycle.name,
       description:
@@ -194,9 +255,6 @@ export class ReviewCycleService {
       status: data.status !== undefined ? data.status : cycle.status,
       updatedBy: userId,
     });
-
-    // Note: To fully support participant update on an existing Draft cycle, we would clear and recreate the snapshot.
-    // For now, snapshot is created at creation time.
 
     this.eventEmitter.emit(PERFORMANCE_EVENTS.CYCLE_UPDATED, {
       cycleId: updated.id,
@@ -212,6 +270,21 @@ export class ReviewCycleService {
     const cycle = await this.repository.findById(id, companyId);
     if (!cycle) {
       throw new NotFoundException(`Review cycle with ID ${id} not found`);
+    }
+
+    if (['Active', 'Completed', 'Archived'].includes(cycle.status)) {
+      throw new BadRequestException(
+        `Cannot delete a review cycle in "${cycle.status}" status. Please cancel the cycle instead.`,
+      );
+    }
+
+    const reviewCount = await this.prisma.performanceReview.count({
+      where: { reviewCycleId: id },
+    });
+    if (reviewCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete review cycle "${cycle.name}" because it already has ${reviewCount} provisioned performance review(s). Please cancel the cycle instead.`,
+      );
     }
 
     const deleted = await this.repository.delete(id, companyId);

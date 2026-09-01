@@ -218,7 +218,11 @@ export class PerformanceService {
     ).length;
 
     const completedWithRating = reviews.filter(
-      (r) => r.status === 'Completed' && r.finalRating > 0,
+      (r) =>
+        r.status === 'Completed' &&
+        r.finalRating > 0 &&
+        r.employee &&
+        !r.employee.deletedAt,
     );
     const avgTeamRating =
       completedWithRating.length > 0
@@ -229,12 +233,30 @@ export class PerformanceService {
           ) / 10
         : 3.5;
 
-    const sortedPerformers = [...completedWithRating].sort(
-      (a, b) => b.finalRating - a.finalRating,
-    );
-    const topPerformer = sortedPerformers[0]?.employee?.name || 'N/A';
+    const sortedPerformers = [...completedWithRating].sort((a, b) => {
+      if (b.finalRating !== a.finalRating) {
+        return b.finalRating - a.finalRating;
+      }
+      return (a.employee?.name || '').localeCompare(b.employee?.name || '');
+    });
+
+    const maxRating = sortedPerformers[0]?.finalRating;
+    const topPerformersList = sortedPerformers
+      .filter((r) => r.finalRating === maxRating)
+      .map((r) => r.employee?.name)
+      .filter(Boolean);
+
+    const topPerformer =
+      topPerformersList.length > 0 ? topPerformersList.join(', ') : 'N/A';
+
+    const minRating = sortedPerformers[sortedPerformers.length - 1]?.finalRating;
+    const lowestPerformersList = sortedPerformers
+      .filter((r) => r.finalRating === minRating)
+      .map((r) => r.employee?.name)
+      .filter(Boolean);
+
     const lowestPerformer =
-      sortedPerformers[sortedPerformers.length - 1]?.employee?.name || 'N/A';
+      lowestPerformersList.length > 0 ? lowestPerformersList.join(', ') : 'N/A';
 
     const completedWithAttendance = reviews.filter(
       (r) => r.attendanceRating > 0,

@@ -66,7 +66,7 @@ export function SettingsPage(p: { sub: string; toast: any; user: any }) {
             address: data.address || "",
           });
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [sub, user]);
 
@@ -95,9 +95,9 @@ export function SettingsPage(p: { sub: string; toast: any; user: any }) {
     return <HolidaysPage canEdit={canEditHolidays} toast={toast} />;
   if (sub === "settings.roles")
     return (
-      <div className="text-center py-16 text-muted-foreground">
-        Access denied. Only Super Admins can manage roles & permissions.
-      </div>
+      <ProtectedRoute permission={PERMISSIONS.SETTINGS_ROLES_VIEW}>
+        <UserRoleMgmtPage toast={toast} />
+      </ProtectedRoute>
     );
   if (sub === "settings.branches") return <EntityBranchPage toast={toast} />;
   if (sub === "settings.fiscal") return <FiscalYearPage toast={toast} />;
@@ -185,7 +185,7 @@ function TimingPage({ toast }: { toast: (m: string, t?: "success" | "error" | "i
           late: data.lateThreshold || 15,
         });
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const saveTiming = async () => {
@@ -271,7 +271,7 @@ function HolidaysPage({
       .then((data) => {
         setHolidays(data);
       })
-      .catch(() => {});
+      .catch(() => { });
   };
 
   useEffect(() => {

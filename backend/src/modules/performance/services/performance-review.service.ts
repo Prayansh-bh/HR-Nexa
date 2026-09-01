@@ -26,12 +26,25 @@ export class PerformanceReviewService {
     companyName: string,
     reviewCycleId: string,
     authorId: string,
+    auditMeta?: {
+      userId: string;
+      userName: string;
+      role: string;
+      ip: string;
+      userAgent: string;
+    },
   ) {
     const cycle = await this.prisma.reviewCycle.findFirst({
       where: { id: reviewCycleId, companyId },
     });
     if (!cycle) {
       throw new NotFoundException(`Review cycle not found`);
+    }
+
+    if (['Completed', 'Archived', 'Cancelled'].includes(cycle.status)) {
+      throw new BadRequestException(
+        `Cannot provision reviews for a ${cycle.status.toLowerCase()} review cycle`,
+      );
     }
 
     // Provision criteria if they don't exist
@@ -66,18 +79,34 @@ export class PerformanceReviewService {
         continue;
       }
 
-      // Identify manager (fallback to department head or null if not set)
+      // Identify manager (hierarchical: direct manager -> department head fallback -> null)
       let managerId: string | null = null;
-      if (emp.managerId) {
-        managerId = emp.managerId;
-      } else if (emp.departmentId) {
+      if (emp.managerId && emp.managerId !== emp.id) {
+        const directManager = await this.prisma.employee.findFirst({
+          where: {
+            id: emp.managerId,
+            companyId: companyId,
+            status: { in: ['Active', 'On Leave'] },
+            deletedAt: null,
+          },
+        });
+        if (directManager) {
+          managerId = directManager.id;
+        }
+      }
+
+      if (!managerId && emp.departmentId) {
         const dept = await this.prisma.department.findUnique({
           where: { id: emp.departmentId },
         });
         if (dept && dept.head) {
-          // If the head is an employee ID
           const headEmp = await this.prisma.employee.findFirst({
-            where: { name: dept.head, companyId: companyId },
+            where: {
+              name: dept.head,
+              companyId: companyId,
+              status: { in: ['Active', 'On Leave'] },
+              deletedAt: null,
+            },
           });
           if (headEmp && headEmp.id !== emp.id) {
             managerId = headEmp.id;
@@ -85,16 +114,34 @@ export class PerformanceReviewService {
         }
       }
 
-      const review = await this.repository.createReview(
-        companyId,
-        companyName,
-        {
-          employeeId: emp.id,
-          managerId,
-          reviewCycleId,
-          status: 'Draft',
-        },
-      );
+      let review: any;
+      try {
+        review = await this.repository.createReview(
+          companyId,
+          companyName,
+          {
+            employeeId: emp.id,
+            managerId,
+            reviewCycleId,
+            status: 'Draft',
+          },
+        );
+      } catch (err: any) {
+        if (
+          err?.code === 'P2002' ||
+          err?.message?.includes('Unique constraint') ||
+          err?.message?.includes('unique constraint')
+        ) {
+          // Graceful handling of concurrent provisioning race
+          // @ts-ignore: TS cache issue with new Prisma schema
+          await this.prisma.reviewCycleParticipant.update({
+            where: { id: participant.id },
+            data: { status: 'Provisioned' },
+          });
+          continue;
+        }
+        throw err;
+      }
 
       // Initialize criterion scores
       let initialAttendanceScore = 0.0;
@@ -110,15 +157,20 @@ export class PerformanceReviewService {
             );
         }
 
-        await this.repository.saveCriterionScore(review.id, crit.id, {
-          selfScore: 0.0,
-          managerScore: 0.0,
-          hrScore: crit.name === 'Attendance' ? initialAttendanceScore : 0.0,
-          remarks:
-            crit.name === 'Attendance'
-              ? 'Auto-calculated from attendance records'
-              : '',
-        });
+        await this.repository.saveCriterionScore(
+          review.id,
+          crit.id,
+          {
+            selfScore: 0.0,
+            managerScore: 0.0,
+            hrScore: crit.name === 'Attendance' ? initialAttendanceScore : 0.0,
+            remarks:
+              crit.name === 'Attendance'
+                ? 'Auto-calculated from attendance records'
+                : '',
+          },
+          companyId,
+        );
       }
 
       let provisionedReview = review;
@@ -135,6 +187,23 @@ export class PerformanceReviewService {
       await this.prisma.reviewCycleParticipant.update({
         where: { id: participant.id },
         data: { status: 'Provisioned' },
+      });
+    }
+
+    if (reviewsCreated.length > 0) {
+      await this.prisma.performanceAudit.create({
+        data: {
+          companyId: companyId || 'PLATFORM',
+          userId: authorId,
+          userName: 'System / HR Admin',
+          userRole: 'HRAdmin',
+          action: 'Reviews Provisioned For Cycle',
+          details: `Review Cycle ID: ${reviewCycleId}, Count: ${reviewsCreated.length}`,
+          oldValue: null,
+          newValue: JSON.stringify({ cycleId: reviewCycleId, count: reviewsCreated.length }),
+          ip: '127.0.0.1',
+          userAgent: 'Server',
+        },
       });
     }
 
@@ -192,12 +261,33 @@ export class PerformanceReviewService {
         `Self-review can only be submitted in Draft status`,
       );
 
+    if (
+      review.reviewCycle &&
+      ['Completed', 'Archived', 'Cancelled'].includes(
+        review.reviewCycle.status,
+      )
+    ) {
+      throw new BadRequestException(
+        `Cannot submit self-review for a ${review.reviewCycle.status.toLowerCase()} review cycle`,
+      );
+    }
+
     // Save criterion self scores
     for (const item of scores) {
-      await this.repository.saveCriterionScore(review.id, item.criterionId, {
-        selfScore: item.score,
-        remarks: item.remarks,
-      });
+      if (item.score < 0 || item.score > 5) {
+        throw new BadRequestException(
+          `Criterion score must be between 0.0 and 5.0 (received: ${item.score})`,
+        );
+      }
+      await this.repository.saveCriterionScore(
+        review.id,
+        item.criterionId,
+        {
+          selfScore: item.score,
+          remarks: item.remarks,
+        },
+        companyId,
+      );
     }
 
     // Refresh review scores
@@ -254,15 +344,23 @@ export class PerformanceReviewService {
     },
   ) {
     const review = await this.repository.findById(id, companyId);
-    if (!review || (auditMeta.role === 'Manager' && review.managerId !== managerId)) {
+    if (!review) {
       throw new NotFoundException(`Performance review with ID "${id}" not found`);
     }
 
-    // P2-1 Remediation: A user MUST NOT submit a manager review for their own performance appraisal
+    // A user MUST NOT submit a manager review for their own performance appraisal
     if (review.employeeId === managerId) {
       throw new ForbiddenException(
         'You cannot submit a manager review for your own performance appraisal.',
       );
+    }
+
+    const isHrOrSuperAdmin =
+      auditMeta.role === 'HRAdmin' ||
+      auditMeta.role === 'SuperAdmin';
+
+    if (!isHrOrSuperAdmin && review.managerId !== managerId) {
+      throw new NotFoundException(`Performance review with ID "${id}" not found`);
     }
 
     if (review.status !== 'Self Review' && review.status !== 'Draft') {
@@ -271,12 +369,33 @@ export class PerformanceReviewService {
       );
     }
 
+    if (
+      review.reviewCycle &&
+      ['Completed', 'Archived', 'Cancelled'].includes(
+        review.reviewCycle.status,
+      )
+    ) {
+      throw new BadRequestException(
+        `Cannot submit manager review for a ${review.reviewCycle.status.toLowerCase()} review cycle`,
+      );
+    }
+
     // Save manager criterion scores
     for (const item of scores) {
-      await this.repository.saveCriterionScore(review.id, item.criterionId, {
-        managerScore: item.score,
-        remarks: item.remarks,
-      });
+      if (item.score < 0 || item.score > 5) {
+        throw new BadRequestException(
+          `Criterion score must be between 0.0 and 5.0 (received: ${item.score})`,
+        );
+      }
+      await this.repository.saveCriterionScore(
+        review.id,
+        item.criterionId,
+        {
+          managerScore: item.score,
+          remarks: item.remarks,
+        },
+        companyId,
+      );
     }
 
     // Refresh review scores
@@ -339,12 +458,33 @@ export class PerformanceReviewService {
       );
     }
 
+    if (
+      review.reviewCycle &&
+      ['Completed', 'Archived', 'Cancelled'].includes(
+        review.reviewCycle.status,
+      )
+    ) {
+      throw new BadRequestException(
+        `Cannot override review in a ${review.reviewCycle.status.toLowerCase()} review cycle`,
+      );
+    }
+
     // Save HR criterion scores
     for (const item of scores) {
-      await this.repository.saveCriterionScore(review.id, item.criterionId, {
-        hrScore: item.score,
-        remarks: item.remarks,
-      });
+      if (item.score < 0 || item.score > 5) {
+        throw new BadRequestException(
+          `Criterion score must be between 0.0 and 5.0 (received: ${item.score})`,
+        );
+      }
+      await this.repository.saveCriterionScore(
+        review.id,
+        item.criterionId,
+        {
+          hrScore: item.score,
+          remarks: item.remarks,
+        },
+        companyId,
+      );
     }
 
     // Calculate final rating (weighted average of HR scores, which integrates automatic attendance score)
@@ -468,6 +608,7 @@ export class PerformanceReviewService {
           hrScore: refreshedAttScore,
           remarks: 'Auto-calculated from attendance records',
         },
+        companyId,
       );
       await this.repository.update(id, {
         attendanceRating: refreshedAttScore,

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   Prisma,
@@ -252,7 +252,19 @@ export class PerformanceReviewRepository {
       hrScore?: number;
       remarks?: string;
     },
+    companyId?: string | null,
   ): Promise<PerformanceCriterionScore> {
+    if (companyId) {
+      const criterion = await this.prisma.performanceCriterion.findFirst({
+        where: { id: criterionId, companyId },
+      });
+      if (!criterion) {
+        throw new NotFoundException(
+          `Performance criterion with ID "${criterionId}" not found in this company`,
+        );
+      }
+    }
+
     const existing = await this.prisma.performanceCriterionScore.findFirst({
       where: { reviewId, criterionId },
     });

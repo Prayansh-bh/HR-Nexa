@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { reimbursementService, ExpenseClaimItemModel } from "../services/reimbursement.service";
+import {
+  reimbursementService,
+  ExpenseClaimItemModel,
+  ExpenseCategoryModel,
+} from "../services/reimbursement.service";
 import { useAuthStore } from "../store/authStore";
 import { useHasPermission } from "../auth/useHasPermission";
 import { PERMISSIONS } from "../auth/permissions";
@@ -17,10 +21,24 @@ export function useExpenseCategoriesQuery() {
   const companyId = user?.companyId ?? null;
 
   return useQuery({
-    queryKey: [...REIMBURSEMENT_QUERY_KEYS.categories, companyId || "default"],
-    queryFn: () => reimbursementService.getCategories(),
+    queryKey: [...REIMBURSEMENT_QUERY_KEYS.categories, companyId || "default", "active"],
+    queryFn: () => reimbursementService.getCategories(true),
     enabled: Boolean(companyId || user?.role === "SuperAdmin"),
     staleTime: 5 * 60_000,
+  });
+}
+
+export function useAdminExpenseCategoriesQuery(activeOnly = false) {
+  const user = useAuthStore((s) => s.user);
+  const companyId = user?.companyId ?? null;
+  const isSuperAdmin = user?.role === "SuperAdmin";
+  const hasManagePermission = useHasPermission([PERMISSIONS.EXPENSES_MANAGE], "any");
+
+  return useQuery({
+    queryKey: [...REIMBURSEMENT_QUERY_KEYS.categories, companyId || "default", activeOnly ? "active" : "all"],
+    queryFn: () => reimbursementService.getCategories(activeOnly),
+    enabled: Boolean((companyId || isSuperAdmin) && (hasManagePermission || isSuperAdmin)),
+    staleTime: 60_000,
   });
 }
 
@@ -96,7 +114,15 @@ export function useExpenseClaimMutations() {
   const queryClient = useQueryClient();
 
   const createCategory = useMutation({
-    mutationFn: (data: any) => reimbursementService.createCategory(data),
+    mutationFn: (data: Partial<ExpenseCategoryModel>) => reimbursementService.createCategory(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: REIMBURSEMENT_QUERY_KEYS.categories });
+    },
+  });
+
+  const updateCategory = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<ExpenseCategoryModel> }) =>
+      reimbursementService.updateCategory(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: REIMBURSEMENT_QUERY_KEYS.categories });
     },
@@ -161,6 +187,7 @@ export function useExpenseClaimMutations() {
 
   return {
     createCategory,
+    updateCategory,
     createMyClaim,
     updateMyClaimDraft,
     submitMyClaim,

@@ -208,6 +208,20 @@ export class PermissionsGuard implements CanActivate {
           user.role === 'CompanyOwner'
         );
       }
+      if (
+        permission === 'employees:profile:docs:download' ||
+        permission === 'documents:read'
+      ) {
+        return (
+          userPermissions.includes('employees:profile:docs:download') ||
+          userPermissions.includes('documents:read') ||
+          userPermissions.includes('expenses:claims:manage') ||
+          userPermissions.includes('expenses:claims:view') ||
+          user.role === 'Accountant' ||
+          user.role === 'HRAdmin' ||
+          user.role === 'CompanyOwner'
+        );
+      }
       if (permission === 'documents:verify') {
         return (
           userPermissions.includes('documents:verify') ||

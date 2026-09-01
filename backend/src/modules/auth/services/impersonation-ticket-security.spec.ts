@@ -81,6 +81,9 @@ describe('Impersonation Ticket & Security Boundary Spec', () => {
       customRole: {
         findMany: jest.fn().mockResolvedValue([]),
       },
+      permission: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
     };
 
     const module: TestingModule = await Test.createTestingModule({

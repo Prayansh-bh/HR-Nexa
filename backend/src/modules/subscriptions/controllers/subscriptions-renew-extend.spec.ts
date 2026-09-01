@@ -3,6 +3,9 @@ import { SubscriptionsController } from './subscriptions.controller';
 import { SubscriptionsService } from '../services/subscriptions.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RolesGuard } from '../../auth/roles.guard';
+import { SubscriptionGuard } from '../../auth/subscription.guard';
+import { PermissionsGuard } from '../../auth/permissions.guard';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 describe('SubscriptionsController - Renew & Extend-Trial Endpoints', () => {
   let controller: SubscriptionsController;
@@ -16,11 +19,18 @@ describe('SubscriptionsController - Renew & Extend-Trial Endpoints', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SubscriptionsController],
-      providers: [{ provide: SubscriptionsService, useValue: service }],
+      providers: [
+        { provide: SubscriptionsService, useValue: service },
+        { provide: PrismaService, useValue: {} },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(SubscriptionGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionsGuard)
       .useValue({ canActivate: () => true })
       .compile();
 

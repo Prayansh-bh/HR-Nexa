@@ -302,6 +302,9 @@ describe('Production Demo Tenant Isolation Architecture Specs', () => {
           isDemo: false,
         },
       },
+      include: {
+        companyRelation: true,
+      },
       orderBy: { createdAt: 'asc' },
     });
   });
@@ -508,13 +511,21 @@ describe('Production Demo Tenant Isolation Architecture Specs', () => {
       findAll: jest.fn().mockResolvedValue([
         { id: 'T-1', status: 'Open', priority: 'High' },
       ]),
+      countStats: jest.fn().mockResolvedValue({
+        total: 1,
+        open: 1,
+        inProgress: 0,
+        resolved: 0,
+        closed: 0,
+        critical: 1,
+      }),
     };
     const ticketsService = new TicketsService(mockTicketsRepo as any, mockPrisma);
     const stats = await ticketsService.getTicketStats();
 
-    expect(mockTicketsRepo.findAll).toHaveBeenCalledWith(null, { isDemo: false });
-    expect(stats.openTickets).toBe(1);
-    expect(stats.criticalTickets).toBe(1);
+    expect(mockTicketsRepo.countStats).toHaveBeenCalledWith({ isDemo: false });
+    expect(stats.open).toBe(1);
+    expect(stats.critical).toBe(1);
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -544,7 +555,7 @@ describe('Production Demo Tenant Isolation Architecture Specs', () => {
     expect(mockPrisma.employee.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          subscriptionId: 'C1',
+          companyId: 'C1',
         }),
       }),
     );
@@ -611,11 +622,7 @@ describe('Production Demo Tenant Isolation Architecture Specs', () => {
     expect(mockPrisma.leaveRequest.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          OR: [
-            { companyId: 'C1' },
-            { employee: { subscriptionId: 'C1' } },
-            { employee: { companyId: 'C1' } },
-          ],
+          employee: { companyId: 'C1' },
         }),
       }),
     );
@@ -647,10 +654,7 @@ describe('Production Demo Tenant Isolation Architecture Specs', () => {
     expect(mockPrisma.payroll.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          OR: [
-            { employee: { companyId: 'C1' } },
-            { employee: { subscriptionId: 'C1' } },
-          ],
+          employee: { companyId: 'C1' },
         }),
       }),
     );
@@ -665,7 +669,10 @@ describe('Production Demo Tenant Isolation Architecture Specs', () => {
 
     const mockContext: any = { isPlatform: jest.fn().mockReturnValue(true), getCompanyId: jest.fn().mockReturnValue(null) };
     mockPrisma.department = { findMany: jest.fn().mockResolvedValue([]) };
-    mockPrisma.document = { findMany: jest.fn().mockResolvedValue([]) };
+    mockPrisma.document = {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
+    };
 
     const deptRepo = new DepartmentsRepository(mockPrisma, mockContext);
     await deptRepo.findAllDepartments();

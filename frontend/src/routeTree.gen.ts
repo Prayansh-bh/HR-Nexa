@@ -47,6 +47,7 @@ import { Route as AppDocumentsIndexRouteImport } from './routes/_app.documents.i
 import { Route as AppAttendanceIndexRouteImport } from './routes/_app.attendance.index'
 import { Route as AppSettingsTimingRouteImport } from './routes/_app.settings.timing'
 import { Route as AppSettingsSecurityRouteImport } from './routes/_app.settings.security'
+import { Route as AppSettingsRolesRouteImport } from './routes/_app.settings.roles'
 import { Route as AppSettingsHolidaysRouteImport } from './routes/_app.settings.holidays'
 import { Route as AppReportsHrAnalyticsRouteImport } from './routes/_app/reports/hr-analytics'
 import { Route as AppPerformanceTeamRouteImport } from './routes/_app.performance.team'
@@ -61,6 +62,7 @@ import { Route as AppPayrollHistoryRouteImport } from './routes/_app.payroll.his
 import { Route as AppPayrollGenerateRouteImport } from './routes/_app.payroll.generate'
 import { Route as AppPayrollCoordinationRouteImport } from './routes/_app.payroll.coordination'
 import { Route as AppPayrollComplianceRouteImport } from './routes/_app.payroll.compliance'
+import { Route as AppPayrollCategoriesRouteImport } from './routes/_app.payroll.categories'
 import { Route as AppLeaveTypesRouteImport } from './routes/_app.leave.types'
 import { Route as AppLeaveReportsRouteImport } from './routes/_app.leave.reports'
 import { Route as AppLeavePolicyRouteImport } from './routes/_app.leave.policy'
@@ -278,6 +280,11 @@ const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
   path: '/security',
   getParentRoute: () => AppSettingsRoute,
 } as any)
+const AppSettingsRolesRoute = AppSettingsRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppSettingsHolidaysRoute = AppSettingsHolidaysRouteImport.update({
   id: '/holidays',
   path: '/holidays',
@@ -347,6 +354,11 @@ const AppPayrollCoordinationRoute = AppPayrollCoordinationRouteImport.update({
 const AppPayrollComplianceRoute = AppPayrollComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
+  getParentRoute: () => AppPayrollRoute,
+} as any)
+const AppPayrollCategoriesRoute = AppPayrollCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => AppPayrollRoute,
 } as any)
 const AppLeaveTypesRoute = AppLeaveTypesRouteImport.update({
@@ -541,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/leave/policy': typeof AppLeavePolicyRoute
   '/leave/reports': typeof AppLeaveReportsRoute
   '/leave/types': typeof AppLeaveTypesRoute
+  '/payroll/categories': typeof AppPayrollCategoriesRoute
   '/payroll/compliance': typeof AppPayrollComplianceRoute
   '/payroll/coordination': typeof AppPayrollCoordinationRoute
   '/payroll/generate': typeof AppPayrollGenerateRoute
@@ -555,6 +568,7 @@ export interface FileRoutesByFullPath {
   '/performance/team': typeof AppPerformanceTeamRoute
   '/reports/hr-analytics': typeof AppReportsHrAnalyticsRoute
   '/settings/holidays': typeof AppSettingsHolidaysRoute
+  '/settings/roles': typeof AppSettingsRolesRoute
   '/settings/security': typeof AppSettingsSecurityRoute
   '/settings/timing': typeof AppSettingsTimingRoute
   '/attendance/': typeof AppAttendanceIndexRoute
@@ -613,6 +627,7 @@ export interface FileRoutesByTo {
   '/leave/policy': typeof AppLeavePolicyRoute
   '/leave/reports': typeof AppLeaveReportsRoute
   '/leave/types': typeof AppLeaveTypesRoute
+  '/payroll/categories': typeof AppPayrollCategoriesRoute
   '/payroll/compliance': typeof AppPayrollComplianceRoute
   '/payroll/coordination': typeof AppPayrollCoordinationRoute
   '/payroll/generate': typeof AppPayrollGenerateRoute
@@ -627,6 +642,7 @@ export interface FileRoutesByTo {
   '/performance/team': typeof AppPerformanceTeamRoute
   '/reports/hr-analytics': typeof AppReportsHrAnalyticsRoute
   '/settings/holidays': typeof AppSettingsHolidaysRoute
+  '/settings/roles': typeof AppSettingsRolesRoute
   '/settings/security': typeof AppSettingsSecurityRoute
   '/settings/timing': typeof AppSettingsTimingRoute
   '/attendance': typeof AppAttendanceIndexRoute
@@ -695,6 +711,7 @@ export interface FileRoutesById {
   '/_app/leave/policy': typeof AppLeavePolicyRoute
   '/_app/leave/reports': typeof AppLeaveReportsRoute
   '/_app/leave/types': typeof AppLeaveTypesRoute
+  '/_app/payroll/categories': typeof AppPayrollCategoriesRoute
   '/_app/payroll/compliance': typeof AppPayrollComplianceRoute
   '/_app/payroll/coordination': typeof AppPayrollCoordinationRoute
   '/_app/payroll/generate': typeof AppPayrollGenerateRoute
@@ -709,6 +726,7 @@ export interface FileRoutesById {
   '/_app/performance/team': typeof AppPerformanceTeamRoute
   '/_app/reports/hr-analytics': typeof AppReportsHrAnalyticsRoute
   '/_app/settings/holidays': typeof AppSettingsHolidaysRoute
+  '/_app/settings/roles': typeof AppSettingsRolesRoute
   '/_app/settings/security': typeof AppSettingsSecurityRoute
   '/_app/settings/timing': typeof AppSettingsTimingRoute
   '/_app/attendance/': typeof AppAttendanceIndexRoute
@@ -777,6 +795,7 @@ export interface FileRouteTypes {
     | '/leave/policy'
     | '/leave/reports'
     | '/leave/types'
+    | '/payroll/categories'
     | '/payroll/compliance'
     | '/payroll/coordination'
     | '/payroll/generate'
@@ -791,6 +810,7 @@ export interface FileRouteTypes {
     | '/performance/team'
     | '/reports/hr-analytics'
     | '/settings/holidays'
+    | '/settings/roles'
     | '/settings/security'
     | '/settings/timing'
     | '/attendance/'
@@ -849,6 +869,7 @@ export interface FileRouteTypes {
     | '/leave/policy'
     | '/leave/reports'
     | '/leave/types'
+    | '/payroll/categories'
     | '/payroll/compliance'
     | '/payroll/coordination'
     | '/payroll/generate'
@@ -863,6 +884,7 @@ export interface FileRouteTypes {
     | '/performance/team'
     | '/reports/hr-analytics'
     | '/settings/holidays'
+    | '/settings/roles'
     | '/settings/security'
     | '/settings/timing'
     | '/attendance'
@@ -930,6 +952,7 @@ export interface FileRouteTypes {
     | '/_app/leave/policy'
     | '/_app/leave/reports'
     | '/_app/leave/types'
+    | '/_app/payroll/categories'
     | '/_app/payroll/compliance'
     | '/_app/payroll/coordination'
     | '/_app/payroll/generate'
@@ -944,6 +967,7 @@ export interface FileRouteTypes {
     | '/_app/performance/team'
     | '/_app/reports/hr-analytics'
     | '/_app/settings/holidays'
+    | '/_app/settings/roles'
     | '/_app/settings/security'
     | '/_app/settings/timing'
     | '/_app/attendance/'
@@ -1240,6 +1264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsSecurityRouteImport
       parentRoute: typeof AppSettingsRoute
     }
+    '/_app/settings/roles': {
+      id: '/_app/settings/roles'
+      path: '/roles'
+      fullPath: '/settings/roles'
+      preLoaderRoute: typeof AppSettingsRolesRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/settings/holidays': {
       id: '/_app/settings/holidays'
       path: '/holidays'
@@ -1336,6 +1367,13 @@ declare module '@tanstack/react-router' {
       path: '/compliance'
       fullPath: '/payroll/compliance'
       preLoaderRoute: typeof AppPayrollComplianceRouteImport
+      parentRoute: typeof AppPayrollRoute
+    }
+    '/_app/payroll/categories': {
+      id: '/_app/payroll/categories'
+      path: '/categories'
+      fullPath: '/payroll/categories'
+      preLoaderRoute: typeof AppPayrollCategoriesRouteImport
       parentRoute: typeof AppPayrollRoute
     }
     '/_app/leave/types': {
@@ -1644,6 +1682,7 @@ const AppLeaveRouteWithChildren = AppLeaveRoute._addFileChildren(
 )
 
 interface AppPayrollRouteChildren {
+  AppPayrollCategoriesRoute: typeof AppPayrollCategoriesRoute
   AppPayrollComplianceRoute: typeof AppPayrollComplianceRoute
   AppPayrollCoordinationRoute: typeof AppPayrollCoordinationRoute
   AppPayrollGenerateRoute: typeof AppPayrollGenerateRoute
@@ -1658,6 +1697,7 @@ interface AppPayrollRouteChildren {
 }
 
 const AppPayrollRouteChildren: AppPayrollRouteChildren = {
+  AppPayrollCategoriesRoute: AppPayrollCategoriesRoute,
   AppPayrollComplianceRoute: AppPayrollComplianceRoute,
   AppPayrollCoordinationRoute: AppPayrollCoordinationRoute,
   AppPayrollGenerateRoute: AppPayrollGenerateRoute,
@@ -1693,6 +1733,7 @@ const AppPerformanceRouteWithChildren = AppPerformanceRoute._addFileChildren(
 
 interface AppSettingsRouteChildren {
   AppSettingsHolidaysRoute: typeof AppSettingsHolidaysRoute
+  AppSettingsRolesRoute: typeof AppSettingsRolesRoute
   AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
   AppSettingsTimingRoute: typeof AppSettingsTimingRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
@@ -1700,6 +1741,7 @@ interface AppSettingsRouteChildren {
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
   AppSettingsHolidaysRoute: AppSettingsHolidaysRoute,
+  AppSettingsRolesRoute: AppSettingsRolesRoute,
   AppSettingsSecurityRoute: AppSettingsSecurityRoute,
   AppSettingsTimingRoute: AppSettingsTimingRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,

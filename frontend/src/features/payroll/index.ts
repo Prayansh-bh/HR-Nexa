@@ -3,3 +3,4 @@ export * from "./pages/PayrollPage";
 export * from "./pages/StatutoryCompliancePage";
 export * from "./pages/AccountantReimbursePage";
 export * from "./pages/AccountantTaxDeclPage";
+export * from "./pages/ExpenseCategoriesAdminPage";

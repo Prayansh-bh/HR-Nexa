@@ -3,6 +3,7 @@ import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, FileText, Eye, S
 import { Field, Btn, Badge, inputCls, cardCls } from "../../../components/ui/DashboardPrimitives";
 import { ModalShell } from "../../../components/ui/ModalShell";
 import { useTenantExpenseClaimsQuery, useExpenseClaimMutations } from "../../../hooks/useReimbursementsQuery";
+import { downloadDocumentFile } from "../../../hooks/useDocumentsQuery";
 import { useHasPermission } from "../../../auth/useHasPermission";
 import { PERMISSIONS } from "../../../auth/permissions";
 
@@ -222,9 +223,22 @@ export function AccountantReimbursePage({ toast }: { toast: (m: string) => void 
                         <span className="font-bold text-primary">{item.category?.name}:</span>
                         <span>₹{item.amount?.toLocaleString("en-IN")}</span>
                         {item.receiptDocument && (
-                          <span className="inline-flex items-center text-[10px] text-emerald-600 gap-0.5">
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                toast("Downloading receipt...");
+                                await downloadDocumentFile(item.receiptDocument.id, item.receiptDocument.fileName || "receipt.pdf");
+                              } catch {
+                                toast("Failed to download receipt document");
+                              }
+                            }}
+                            className="inline-flex items-center text-[10px] text-emerald-600 hover:text-emerald-700 hover:underline gap-0.5"
+                            title="Click to download receipt"
+                          >
                             <FileText className="h-3 w-3" /> Receipt Attached
-                          </span>
+                          </button>
                         )}
                       </div>
                     ))}
@@ -270,6 +284,32 @@ export function AccountantReimbursePage({ toast }: { toast: (m: string) => void 
                     <span>{item.category?.name} — {item.merchant || "Vendor"}</span>
                     <span className="text-primary">Claimed: ₹{item.amount?.toLocaleString("en-IN")}</span>
                   </div>
+
+                  {item.receiptDocument && (
+                    <div className="flex items-center justify-between bg-muted/40 px-2.5 py-1.5 rounded-lg text-xs">
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground truncate">
+                        <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="font-semibold text-foreground truncate">{item.receiptDocument.fileName || "Receipt Attachment"}</span>
+                        {item.receiptDocument.size && (
+                          <span className="text-[10px] text-muted-foreground">({item.receiptDocument.size})</span>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            toast("Downloading receipt...");
+                            await downloadDocumentFile(item.receiptDocument.id, item.receiptDocument.fileName || "receipt.pdf");
+                          } catch {
+                            toast("Failed to download receipt document");
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 text-primary hover:underline text-xs font-semibold shrink-0 ml-2"
+                      >
+                        <Download className="h-3 w-3" /> View / Download
+                      </button>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Approved Amount (₹)">

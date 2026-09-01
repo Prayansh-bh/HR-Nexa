@@ -28,6 +28,10 @@ import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AuthenticatedRequest } from '../../auth/interfaces/authenticated-request.interface';
 
 import { CreateReviewCycleDto } from '../dto/create-review-cycle.dto';
+import { UpdateReviewCycleDto } from '../dto/update-review-cycle.dto';
+import { SubmitSelfReviewDto } from '../dto/submit-self-review.dto';
+import { SubmitManagerReviewDto } from '../dto/submit-manager-review.dto';
+import { OverrideHrReviewDto } from '../dto/override-hr-review.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { createPaginatedResponse } from '../../../common/dto/paginated-response.dto';
 
@@ -123,10 +127,10 @@ export class PerformanceController {
   async updateCycle(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() body: any,
+    @Body() dto: UpdateReviewCycleDto,
   ) {
     const companyId = this.getTenantId(req);
-    return this.reviewCycleService.update(id, companyId, body, req.user.id);
+    return this.reviewCycleService.update(id, companyId, dto, req.user.id);
   }
 
   @Delete('cycles/:id')
@@ -173,13 +177,45 @@ export class PerformanceController {
       });
     }
 
-    // Managers can only fetch reviews where they are the manager
+    // Managers:
+    // 1. My Reviews (employeeId specified and matches manager's own employee ID) -> fetch own reviews
+    // 2. Team Reviews (employeeId not matching own ID or omitted) -> fetch team reviews where user is manager
     if (req.user.role === Role.Manager) {
       const mgrId = req.user.employee?.id;
       if (!mgrId) return createPaginatedResponse([], 0, parsedPage || 1, parsedLimit || 50);
+
+      if (employeeId && employeeId === mgrId) {
+        return this.reviewService.findReviews(companyId, {
+          employeeId: mgrId,
+          reviewCycleId,
+          status,
+          page: parsedPage,
+          limit: parsedLimit,
+        });
+      }
+
       return this.reviewService.findReviews(companyId, {
         managerId: mgrId,
         employeeId,
+        reviewCycleId,
+        status,
+        page: parsedPage,
+        limit: parsedLimit,
+      });
+    }
+
+    // Non-admin / non-manager roles without PERFORMANCE_CYCLES_MANAGE permission
+    // must be restricted to their own reviews if they have a linked employee record
+    const canManageAll =
+      req.user.role === Role.SuperAdmin ||
+      req.user.role === Role.HRAdmin ||
+      req.user.permissions?.includes(Permission.PERFORMANCE_CYCLES_MANAGE);
+
+    if (!canManageAll) {
+      const empId = req.user.employee?.id;
+      if (!empId) return createPaginatedResponse([], 0, parsedPage || 1, parsedLimit || 50);
+      return this.reviewService.findReviews(companyId, {
+        employeeId: empId,
         reviewCycleId,
         status,
         page: parsedPage,
@@ -207,17 +243,24 @@ export class PerformanceController {
     const review = await this.reviewService.findReviewById(id, companyId);
 
     // Enforce scoping rules using 404 anti-enumeration policy
-    if (
-      req.user.role === Role.Employee &&
-      review.employeeId !== req.user.employee?.id
-    ) {
-      throw new NotFoundException(`Performance review with ID "${id}" not found`);
-    }
-    if (
-      req.user.role === Role.Manager &&
-      review.managerId !== req.user.employee?.id
-    ) {
-      throw new NotFoundException(`Performance review with ID "${id}" not found`);
+    const isHrOrSuperAdmin =
+      req.user.role === Role.SuperAdmin ||
+      req.user.role === Role.HRAdmin ||
+      req.user.permissions?.includes(Permission.PERFORMANCE_CYCLES_MANAGE);
+
+    if (!isHrOrSuperAdmin) {
+      const userEmpId = req.user.employee?.id;
+      if (req.user.role === Role.Manager) {
+        const isOwnReview = review.employeeId === userEmpId;
+        const isTeamReview = review.managerId === userEmpId;
+        if (!isOwnReview && !isTeamReview) {
+          throw new NotFoundException(`Performance review with ID "${id}" not found`);
+        }
+      } else {
+        if (!userEmpId || review.employeeId !== userEmpId) {
+          throw new NotFoundException(`Performance review with ID "${id}" not found`);
+        }
+      }
     }
 
     return review;
@@ -231,11 +274,19 @@ export class PerformanceController {
   ) {
     const companyId = this.getTenantId(req) || 'default';
     const companyName = (req.user as any).subscription?.company || 'Company';
+    const auditMeta = {
+      userId: req.user.id,
+      userName: req.user.name,
+      role: req.user.role,
+      ip: req.ip || '127.0.0.1',
+      userAgent: req.headers['user-agent'] || 'Browser',
+    };
     return this.reviewService.createReviewsForCycle(
       companyId,
       companyName,
       cycleId,
       req.user.id,
+      auditMeta,
     );
   }
 
@@ -244,7 +295,7 @@ export class PerformanceController {
   async submitSelfReview(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() body: { feedback: string; scores: any[] },
+    @Body() dto: SubmitSelfReviewDto,
   ) {
     const companyId = this.getTenantId(req);
     const employeeId = req.user.employee?.id;
@@ -263,8 +314,8 @@ export class PerformanceController {
       id,
       companyId,
       employeeId,
-      body.feedback,
-      body.scores,
+      dto.feedback || '',
+      dto.scores || [],
       auditMeta,
     );
   }
@@ -274,14 +325,7 @@ export class PerformanceController {
   async submitManagerReview(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body()
-    body: {
-      feedback: string;
-      promotion: boolean;
-      increment: boolean;
-      training: boolean;
-      scores: any[];
-    },
+    @Body() dto: SubmitManagerReviewDto,
   ) {
     const companyId = this.getTenantId(req);
     const managerId = req.user.employee?.id;
@@ -300,13 +344,13 @@ export class PerformanceController {
       id,
       companyId,
       managerId,
-      body.feedback,
+      dto.feedback || '',
       {
-        promotion: body.promotion,
-        increment: body.increment,
-        training: body.training,
+        promotion: Boolean(dto.promotion),
+        increment: Boolean(dto.increment),
+        training: Boolean(dto.training),
       },
-      body.scores,
+      dto.scores || [],
       auditMeta,
     );
   }
@@ -316,7 +360,7 @@ export class PerformanceController {
   async overrideHrReview(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() body: { remarks: string; scores: any[] },
+    @Body() dto: OverrideHrReviewDto,
   ) {
     const companyId = this.getTenantId(req);
     const auditMeta = {
@@ -330,8 +374,8 @@ export class PerformanceController {
     return this.reviewService.overrideHrReview(
       id,
       companyId,
-      body.remarks,
-      body.scores,
+      dto.remarks || '',
+      dto.scores || [],
       auditMeta,
     );
   }

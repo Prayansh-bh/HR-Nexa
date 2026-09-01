@@ -126,8 +126,8 @@ describe('IntegrationsController Security & Scope Isolation (Phase 4)', () => {
       );
     });
 
-    it('should throw ForbiddenException if non-SuperAdmin user is missing valid companyId', async () => {
-      const req = createReq(Role.CompanyOwner, null);
+    it('should throw ForbiddenException if non-SuperAdmin user attempts access', async () => {
+      const req = createReq(Role.CompanyOwner, 'company_A');
       expect(() => (controller as any).getAuthorizedCompanyId(req)).toThrow(
         ForbiddenException,
       );
@@ -138,129 +138,70 @@ describe('IntegrationsController Security & Scope Isolation (Phase 4)', () => {
       const companyId = (controller as any).getAuthorizedCompanyId(req);
       expect(companyId).toBeNull();
     });
-
-    it('should resolve companyId = company_A for Tenant Admin (Tenant Scope)', async () => {
-      const req = createReq(Role.CompanyOwner, 'company_A');
-      const companyId = (controller as any).getAuthorizedCompanyId(req);
-      expect(companyId).toEqual('company_A');
-    });
   });
 
-  describe('2. Tenant Isolation & Cross-Tenant Protection', () => {
-    it('Tenant A can list Tenant A credentials', async () => {
+  describe('2. Platform Integration Credential Operations', () => {
+    it('SuperAdmin can list platform credentials', async () => {
       await credentialsService.createCredential({
         provider: IntegrationProvider.AWS_S3,
-        name: 'Tenant A S3',
-        companyId: 'company_A',
+        name: 'Platform S3 A',
+        companyId: null,
         config: { region: 'ap-south-1', bucket: 'b-a', accessKeyId: 'ak-a' },
         secrets: { secretAccessKey: 'sk-a' },
       });
 
       await credentialsService.createCredential({
-        provider: IntegrationProvider.AWS_S3,
-        name: 'Tenant B S3',
-        companyId: 'company_B',
-        config: { region: 'ap-south-1', bucket: 'b-b', accessKeyId: 'ak-b' },
-        secrets: { secretAccessKey: 'sk-b' },
-      });
-
-      const reqA = createReq(Role.CompanyOwner, 'company_A');
-      const listA = await controller.listCredentials(reqA);
-
-      expect(listA.length).toEqual(1);
-      expect(listA[0].name).toEqual('Tenant A S3');
-      expect(listA[0].companyId).toEqual('company_A');
-    });
-
-    it('Tenant A cannot read Tenant B credential by ID (403 Forbidden)', async () => {
-      const createdB = await credentialsService.createCredential({
-        provider: IntegrationProvider.AWS_S3,
-        name: 'Tenant B S3',
-        companyId: 'company_B',
-        config: { region: 'ap-south-1', bucket: 'b-b', accessKeyId: 'ak-b' },
-        secrets: { secretAccessKey: 'sk-b' },
-      });
-
-      const reqA = createReq(Role.CompanyOwner, 'company_A');
-      await expect(controller.getCredential(createdB.id, reqA)).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it('Tenant A cannot update Tenant B credential (403 Forbidden)', async () => {
-      const createdB = await credentialsService.createCredential({
         provider: IntegrationProvider.RAZORPAY,
-        name: 'Tenant B Razorpay',
-        companyId: 'company_B',
-        config: { keyId: 'rzp_b' },
-        secrets: { keySecret: 'sec_b', webhookSecret: 'wh_b' },
+        name: 'Platform Razorpay',
+        companyId: null,
+        config: { keyId: 'rzp_test' },
+        secrets: { keySecret: 'sec_test', webhookSecret: 'wh_test' },
       });
 
-      const reqA = createReq(Role.CompanyOwner, 'company_A');
-      await expect(
-        controller.updateCredential(createdB.id, { name: 'Hacked Name' }, reqA),
-      ).rejects.toThrow(ForbiddenException);
+      const reqSuperAdmin = createReq(Role.SuperAdmin);
+      const list = await controller.listCredentials(reqSuperAdmin);
+
+      expect(list.length).toEqual(2);
+      expect(list[0].name).toEqual('Platform S3 A');
     });
 
-    it('Tenant A cannot enable/disable Tenant B credential (403 Forbidden)', async () => {
-      const createdB = await credentialsService.createCredential({
-        provider: IntegrationProvider.SMTP_EMAIL,
-        name: 'Tenant B SMTP',
-        companyId: 'company_B',
-        config: { host: 'smtp.b.com', port: 587, secure: false, user: 'u', from: 'a@b.com', name: 'B' },
-        secrets: { password: 'pass' },
-      });
-
-      const reqA = createReq(Role.CompanyOwner, 'company_A');
-      await expect(
-        controller.setStatus(createdB.id, { enabled: false }, reqA),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('Tenant A cannot delete Tenant B credential (403 Forbidden)', async () => {
-      const createdB = await credentialsService.createCredential({
+    it('Tenant non-SuperAdmin user cannot list, get, or update credentials (403 Forbidden)', async () => {
+      const created = await credentialsService.createCredential({
         provider: IntegrationProvider.AWS_S3,
-        name: 'Tenant B S3',
-        companyId: 'company_B',
+        name: 'Platform S3',
+        companyId: null,
         config: { region: 'ap-south-1', bucket: 'b-b', accessKeyId: 'ak-b' },
         secrets: { secretAccessKey: 'sk-b' },
       });
 
-      const reqA = createReq(Role.CompanyOwner, 'company_A');
-      await expect(controller.deleteCredential(createdB.id, reqA)).rejects.toThrow(
-        ForbiddenException,
-      );
+      const reqTenant = createReq(Role.CompanyOwner, 'company_A');
+      await expect(controller.listCredentials(reqTenant)).rejects.toThrow(ForbiddenException);
+      await expect(controller.getCredential(created.id, reqTenant)).rejects.toThrow(ForbiddenException);
+      await expect(controller.updateCredential(created.id, { name: 'Hacked' }, reqTenant)).rejects.toThrow(ForbiddenException);
+      await expect(controller.deleteCredential(created.id, reqTenant)).rejects.toThrow(ForbiddenException);
     });
 
-    it('Tenant A cannot create platform credential (companyId is forced server-side)', async () => {
-      const reqA = createReq(Role.CompanyOwner, 'company_A');
+    it('SuperAdmin can create, read, and delete platform credentials', async () => {
+      const reqSuperAdmin = createReq(Role.SuperAdmin);
 
       const result = await controller.createCredential(
         {
           provider: IntegrationProvider.AWS_S3,
-          name: 'Attempted Platform S3',
+          name: 'Platform S3 Admin',
           config: { region: 'ap-south-1', bucket: 'b-a', accessKeyId: 'ak-a' },
           secrets: { secretAccessKey: 'sk-a' },
         },
-        reqA,
+        reqSuperAdmin,
       );
 
-      expect(result.companyId).toEqual('company_A');
-    });
+      expect(result.companyId).toBeNull();
+      expect(result.name).toEqual('Platform S3 Admin');
 
-    it('Tenant user cannot access platform credential (403 Forbidden)', async () => {
-      const platformS3 = await credentialsService.createCredential({
-        provider: IntegrationProvider.AWS_S3,
-        name: 'Platform S3',
-        companyId: null,
-        config: { region: 'ap-south-1', bucket: 'plat-b', accessKeyId: 'ak-plat' },
-        secrets: { secretAccessKey: 'sk-plat' },
-      });
+      const fetched = await controller.getCredential(result.id, reqSuperAdmin);
+      expect(fetched.id).toEqual(result.id);
 
-      const reqA = createReq(Role.CompanyOwner, 'company_A');
-      await expect(controller.getCredential(platformS3.id, reqA)).rejects.toThrow(
-        ForbiddenException,
-      );
+      const deleted = await controller.deleteCredential(result.id, reqSuperAdmin);
+      expect(deleted.success).toBe(true);
     });
 
     it('SuperAdmin can access platform credential', async () => {

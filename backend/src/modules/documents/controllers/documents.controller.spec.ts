@@ -138,6 +138,124 @@ describe('DocumentsController', () => {
       await controller.download('doc-comp', mockRes as any, empReq as any);
       expect(service.download).toHaveBeenCalledWith('doc-comp', expect.anything());
     });
+
+    it('should allow Accountant to download own-tenant EXPENSE_RECEIPT document', async () => {
+      service.findOne = jest.fn().mockResolvedValue({
+        id: 'doc-receipt-1',
+        employeeId: 'emp-456',
+        category: 'EXPENSE_RECEIPT',
+        fileName: 'hotel_bill.pdf',
+      } as any);
+
+      const accountantReq = {
+        user: {
+          id: 'usr-acc',
+          role: 'Accountant',
+          companyId: 'company-77',
+        },
+      };
+
+      await controller.download('doc-receipt-1', mockRes as any, accountantReq as any);
+      expect(service.download).toHaveBeenCalledWith('doc-receipt-1', expect.anything());
+    });
+
+    it('should allow Accountant to download own-tenant TAX_DECLARATION document', async () => {
+      service.findOne = jest.fn().mockResolvedValue({
+        id: 'doc-tax-1',
+        employeeId: 'emp-456',
+        category: 'TAX_DECLARATION',
+        fileName: '80c_investment_proof.pdf',
+      } as any);
+
+      const accountantReq = {
+        user: {
+          id: 'usr-acc',
+          role: 'Accountant',
+          companyId: 'company-77',
+        },
+      };
+
+      await controller.download('doc-tax-1', mockRes as any, accountantReq as any);
+      expect(service.download).toHaveBeenCalledWith('doc-tax-1', expect.anything());
+    });
+
+    it('should allow Accountant to download own-tenant COMPLIANCE document', async () => {
+      service.findOne = jest.fn().mockResolvedValue({
+        id: 'doc-comp-1',
+        employeeId: null,
+        category: 'COMPLIANCE',
+        fileName: 'financial_policy.pdf',
+      } as any);
+
+      const accountantReq = {
+        user: {
+          id: 'usr-acc',
+          role: 'Accountant',
+          companyId: 'company-77',
+        },
+      };
+
+      await controller.download('doc-comp-1', mockRes as any, accountantReq as any);
+      expect(service.download).toHaveBeenCalledWith('doc-comp-1', expect.anything());
+    });
+
+    it('should throw ForbiddenException if Accountant attempts to download HR_LETTER document', async () => {
+      service.findOne = jest.fn().mockResolvedValue({
+        id: 'doc-hr-1',
+        employeeId: 'emp-456',
+        category: 'HR_LETTER',
+        fileName: 'confidential_promotion_letter.pdf',
+      } as any);
+
+      const accountantReq = {
+        user: {
+          id: 'usr-acc',
+          role: 'Accountant',
+          companyId: 'company-77',
+        },
+      };
+
+      await expect(controller.download('doc-hr-1', mockRes as any, accountantReq as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw ForbiddenException if Accountant attempts to download EMPLOYEE personal document', async () => {
+      service.findOne = jest.fn().mockResolvedValue({
+        id: 'doc-emp-1',
+        employeeId: 'emp-456',
+        category: 'EMPLOYEE',
+        fileName: 'passport_scan.pdf',
+      } as any);
+
+      const accountantReq = {
+        user: {
+          id: 'usr-acc',
+          role: 'Accountant',
+          companyId: 'company-77',
+        },
+      };
+
+      await expect(controller.download('doc-emp-1', mockRes as any, accountantReq as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should reject download when document belongs to a foreign tenant', async () => {
+      service.findOne = jest.fn().mockRejectedValue(new ForbiddenException('Cross-tenant data access strictly prohibited'));
+
+      const accountantReq = {
+        user: {
+          id: 'usr-acc',
+          role: 'Accountant',
+          companyId: 'company-77',
+        },
+      };
+
+      await expect(controller.download('doc-foreign-1', mockRes as any, accountantReq as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
   });
 
   describe('reject (F04 Permission Tests)', () => {

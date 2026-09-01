@@ -148,6 +148,7 @@ export const PERSONA_TEMPLATES: Record<string, PersonaItem[]> = {
         { featureId: "settings.company" },
         { featureId: "settings.timing" },
         { featureId: "settings.holidays" },
+        { featureId: "settings.roles" },
         { featureId: "settings.security" },
       ],
     },

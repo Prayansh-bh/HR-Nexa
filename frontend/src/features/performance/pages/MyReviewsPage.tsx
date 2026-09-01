@@ -7,7 +7,7 @@ import {
 } from "../../../hooks/usePerformanceQuery";
 
 export function MyReviewsPage({ user, toast }: { user: any; toast: (m: string) => void }) {
-  const employeeId = user?.employeeId;
+  const employeeId = user?.employeeId || user?.employee?.id;
   const { reviews, isLoadingReviews } = usePerformanceReviewsQuery(
     { employeeId: employeeId || undefined },
     { enabled: Boolean(employeeId) },

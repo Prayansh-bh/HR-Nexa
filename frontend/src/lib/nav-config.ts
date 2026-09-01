@@ -82,6 +82,9 @@ export function getPathFromId(id: string): string {
     case "settings.security":
     case "security":
       return "/settings/security";
+    case "settings.roles":
+    case "roles":
+      return "/settings/roles";
     case "settings":
     case "settings.company":
       return "/settings";

@@ -6,7 +6,7 @@ export const BASE_API =
 
 export const OWNER_APP_URL =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_OWNER_APP_URL) ||
-  "http://localhost:5174";
+  "https://owner.hrnexa.com";
 
 export const PORTAL_TYPE =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_PORTAL_TYPE) ||

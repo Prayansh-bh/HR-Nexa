@@ -66,9 +66,11 @@ export interface ExpenseClaimModel {
 }
 
 export const reimbursementService = {
-  async getCategories(): Promise<ExpenseCategoryModel[]> {
+  async getCategories(activeOnly?: boolean): Promise<ExpenseCategoryModel[]> {
     try {
-      const response = await axiosInstance.get("/expense-claims/categories");
+      const response = await axiosInstance.get("/expense-claims/categories", {
+        params: activeOnly !== undefined ? { activeOnly } : undefined,
+      });
       return response.data;
     } catch (error) {
       return handleApiError(error);

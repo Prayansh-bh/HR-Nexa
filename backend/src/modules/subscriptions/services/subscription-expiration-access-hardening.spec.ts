@@ -146,20 +146,26 @@ describe('Subscription Expiration & Access Control Hardening Specs', () => {
 
   describe('2. SubscriptionGuard Enforcement', () => {
     let guard: SubscriptionGuard;
+    let mockReflector: any;
 
     beforeEach(() => {
-      guard = new SubscriptionGuard({} as any, {} as any);
+      mockReflector = {
+        getAllAndOverride: jest.fn().mockReturnValue(false),
+      };
+      guard = new SubscriptionGuard(mockReflector, {} as any);
     });
 
     it('H. Blocks API access for expired tenant context', async () => {
       const mockContext: any = {
+        getHandler: () => ({}),
+        getClass: () => ({}),
         switchToHttp: () => ({
           getRequest: () => ({
             user: {
               role: 'HRAdmin',
               subscription: {
                 status: 'Trial',
-                expiry: '2026-08-14', // expired 2 days ago
+                expiry: '2020-08-14', // expired
               },
             },
           }),
@@ -175,20 +181,23 @@ describe('Subscription Expiration & Access Control Hardening Specs', () => {
 
     it('Allows API access for valid active tenant', async () => {
       const mockContext: any = {
+        getHandler: () => ({}),
+        getClass: () => ({}),
         switchToHttp: () => ({
           getRequest: () => ({
             user: {
               role: 'HRAdmin',
               subscription: {
                 status: 'Trial',
-                expiry: '2026-08-20', // active
+                expiry: '2035-08-20', // active
               },
             },
           }),
         }),
       };
 
-      await expect(guard.canActivate(mockContext)).resolves.toBe(true);
+      const result = await guard.canActivate(mockContext);
+      expect(result).toBe(true);
     });
   });
 

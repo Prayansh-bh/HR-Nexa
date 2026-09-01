@@ -183,6 +183,8 @@ export const CANONICAL_ROLE_PERMISSIONS: Record<string, string[]> = {
     Permission.EXPENSES_VIEW,
     Permission.EXPENSES_MANAGE,
     Permission.EXPENSES_PAY,
+    Permission.EMPLOYEES_PROFILE_DOCS_DOWNLOAD,
+    Permission.DOCUMENTS_READ,
     Permission.FISCAL_YEAR_VIEW,
     Permission.EXIT_SETTLE,
     Permission.SUPPORT_TICKETS_VIEW,

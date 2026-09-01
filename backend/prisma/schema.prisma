@@ -1259,6 +1259,7 @@ model PerformanceReview {
   manager              Employee?                   @relation("ManagerReviews", fields: [managerId], references: [id])
   reviewCycle          ReviewCycle                 @relation(fields: [reviewCycleId], references: [id], onDelete: Cascade)
 
+  @@unique([reviewCycleId, employeeId])
   @@index([companyId, status])
   @@index([employeeId, status])
 }
@@ -1287,6 +1288,8 @@ model PerformanceCriterionScore {
   updatedAt    DateTime             @updatedAt
   criterion    PerformanceCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
   review       PerformanceReview    @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, criterionId])
 }
 
 model PerformanceGoal {

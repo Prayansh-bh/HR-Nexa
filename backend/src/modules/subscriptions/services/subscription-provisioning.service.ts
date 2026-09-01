@@ -36,6 +36,58 @@ import { OutboxPublisherService } from '../../../common/queue/outbox-publisher.s
 
 import { RoleProvisioningService } from '../../auth/services/role-provisioning.service';
 
+export interface DefaultExpenseCategoryTemplate {
+  name: string;
+  code: string;
+  description: string;
+  maxLimit: number;
+  requireReceipt: boolean;
+  isTaxable: boolean;
+}
+
+export const DEFAULT_EXPENSE_CATEGORIES: DefaultExpenseCategoryTemplate[] = [
+  {
+    name: 'Travel & Conveyance',
+    code: 'TRAVEL',
+    description: 'Local and outstation business travel, taxi, fuel, flight, and train expenses',
+    maxLimit: 10000,
+    requireReceipt: true,
+    isTaxable: false,
+  },
+  {
+    name: 'Client Meals & Entertainment',
+    code: 'MEALS',
+    description: 'Business lunches, team dinners, and client entertainment expenses',
+    maxLimit: 3000,
+    requireReceipt: true,
+    isTaxable: true,
+  },
+  {
+    name: 'Office Supplies & Stationery',
+    code: 'OFFICE_SUPPLIES',
+    description: 'Stationery, printing, postage, and office consumable expenses',
+    maxLimit: 5000,
+    requireReceipt: true,
+    isTaxable: false,
+  },
+  {
+    name: 'Internet & Telephone',
+    code: 'COMMUNICATION',
+    description: 'Mobile phone, broadband, and remote work connectivity expenses',
+    maxLimit: 2500,
+    requireReceipt: true,
+    isTaxable: false,
+  },
+  {
+    name: 'Medical Reimbursement',
+    code: 'MEDICAL',
+    description: 'Outpatient medical consultations, diagnostics, and prescription expenses',
+    maxLimit: 15000,
+    requireReceipt: true,
+    isTaxable: false,
+  },
+];
+
 @Injectable()
 export class SubscriptionProvisioningService {
   private readonly logger = new Logger(SubscriptionProvisioningService.name);
@@ -330,7 +382,32 @@ export class SubscriptionProvisioningService {
           );
           Object.assign(companyRolesMap, defaultRolesMap);
 
-          // 7. Seed default HR Admin user
+          // 7. Seed default Expense Categories idempotently
+          if (tx.expenseCategory) {
+            for (const cat of DEFAULT_EXPENSE_CATEGORIES) {
+              await tx.expenseCategory.upsert({
+                where: {
+                  companyId_code: {
+                    companyId: createdCompany.id,
+                    code: cat.code,
+                  },
+                },
+                update: {}, // Retain custom configurations on tenant retry
+                create: {
+                  companyId: createdCompany.id,
+                  name: cat.name,
+                  code: cat.code,
+                  description: cat.description,
+                  maxLimit: cat.maxLimit,
+                  requireReceipt: cat.requireReceipt,
+                  isTaxable: cat.isTaxable,
+                  isActive: true,
+                },
+              });
+            }
+          }
+
+          // 8. Seed default HR Admin user
           const existingUser = await tx.user.findUnique({
             where: { email: adminEmail },
           });

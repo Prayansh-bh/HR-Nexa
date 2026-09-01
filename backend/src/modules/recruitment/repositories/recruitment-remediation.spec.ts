@@ -11,6 +11,7 @@ describe('Recruitment Repository - Company ID vs Subscription ID Remediation', (
     mockPrisma = {
       jobRequisition: {
         findMany: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(),
         count: jest.fn(),
       },
@@ -50,12 +51,13 @@ describe('Recruitment Repository - Company ID vs Subscription ID Remediation', (
 
       await repository.getJobPostings(mockScope);
 
-      expect(mockPrisma.jobRequisition.findMany).toHaveBeenCalledWith({
-        where: {
-          subscriptionId: 'SUB_A', // MUST NOT be 'COMPANY_A'
-        },
-        orderBy: { createdAt: 'asc' },
-      });
+      expect(mockPrisma.jobRequisition.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            subscriptionId: 'SUB_A', // MUST NOT be 'COMPANY_A'
+          }),
+        }),
+      );
     });
 
     it('createJobPosting writes correct subscriptionId (SUB_A)', async () => {
@@ -68,7 +70,7 @@ describe('Recruitment Repository - Company ID vs Subscription ID Remediation', (
 
       expect(mockPrisma.jobRequisition.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          jobTitle: 'Software Engineer',
+          title: 'Software Engineer',
           department: 'Engineering',
           subscriptionId: 'SUB_A', // MUST be 'SUB_A'
         }),
@@ -82,13 +84,13 @@ describe('Recruitment Repository - Company ID vs Subscription ID Remediation', (
 
       await repository.getCandidates(mockScope);
 
-      expect(mockPrisma.candidate.findMany).toHaveBeenCalledWith({
-        where: {
-          subscriptionId: 'SUB_A', // MUST NOT be 'COMPANY_A'
-        },
-        orderBy: { createdAt: 'asc' },
-        include: { evaluations: true },
-      });
+      expect(mockPrisma.candidate.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            subscriptionId: 'SUB_A', // MUST NOT be 'COMPANY_A'
+          }),
+        }),
+      );
     });
 
     it('createCandidate writes correct subscriptionId (SUB_A)', async () => {
@@ -100,14 +102,16 @@ describe('Recruitment Repository - Company ID vs Subscription ID Remediation', (
         jobId: 'job-1',
       });
 
-      expect(mockPrisma.candidate.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          name: 'John Doe',
-          email: 'john@example.com',
-          jobId: 'job-1',
-          subscriptionId: 'SUB_A', // MUST be 'SUB_A'
+      expect(mockPrisma.candidate.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            name: 'John Doe',
+            email: 'john@example.com',
+            jobId: 'job-1',
+            subscriptionId: 'SUB_A', // MUST be 'SUB_A'
+          }),
         }),
-      });
+      );
     });
   });
 

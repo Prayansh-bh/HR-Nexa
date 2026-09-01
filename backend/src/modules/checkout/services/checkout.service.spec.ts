@@ -8,6 +8,7 @@ import {
 import { CheckoutService } from './checkout.service';
 import { RazorpayService } from './razorpay.service';
 import { SubscriptionProvisioningService } from '../../subscriptions/services/subscription-provisioning.service';
+import { PaymentsService } from '../../billing/services/payments.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 describe('CheckoutService (Phase B1)', () => {
@@ -112,6 +113,13 @@ describe('CheckoutService (Phase B1)', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: RazorpayService, useValue: razorpayService },
         { provide: SubscriptionProvisioningService, useValue: provisioningService },
+        {
+          provide: PaymentsService,
+          useValue: {
+            createPaymentRecord: jest.fn().mockResolvedValue({}),
+            processPayment: jest.fn().mockResolvedValue({}),
+          },
+        },
       ],
     }).compile();
 

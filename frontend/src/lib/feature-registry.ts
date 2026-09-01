@@ -569,6 +569,15 @@ export const FEATURE_REGISTRY: Record<string, FeatureDefinition> = {
     category: "settings",
     navigation: { discoverable: true, category: "settings" },
   },
+  "settings.roles": {
+    id: "settings.roles",
+    label: "Roles & Permissions",
+    route: "/settings/roles",
+    permission: PERMISSIONS.SETTINGS_ROLES_VIEW,
+    icon: ShieldCheck,
+    category: "settings",
+    navigation: { discoverable: true, category: "settings" },
+  },
   "settings.security": {
     id: "settings.security",
     label: "Security & Password",

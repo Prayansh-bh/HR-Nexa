@@ -92,6 +92,7 @@ export class ExpenseClaimService {
         amount: i.amount,
         receiptDocumentId: i.receiptDocumentId,
       })),
+      employeeId,
     );
 
     const fullItems = dto.items.map((item, idx) => ({
@@ -154,6 +155,7 @@ export class ExpenseClaimService {
           amount: i.amount,
           receiptDocumentId: i.receiptDocumentId,
         })),
+        employeeId,
       );
 
       fullItems = dto.items.map((item, idx) => ({

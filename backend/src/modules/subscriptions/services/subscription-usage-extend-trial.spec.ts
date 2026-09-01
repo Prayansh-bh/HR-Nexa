@@ -42,7 +42,7 @@ describe('SubscriptionUsageService - extendTrial Hardening Specs (F-01)', () => 
       id: 'SUB-1',
       company: 'Acme Corp',
       status: 'Trial',
-      expiry: '2026-08-30',
+      expiry: '2029-08-30',
       cycle: 'Trial',
     });
 
@@ -54,42 +54,42 @@ describe('SubscriptionUsageService - extendTrial Hardening Specs (F-01)', () => 
     expect(mockPrisma.subscription.update).toHaveBeenCalledWith({
       where: { id: 'SUB-1' },
       data: {
-        expiry: '2026-09-13',
+        expiry: '2029-09-13',
         status: 'Trial',
         cycle: 'Trial',
       },
     });
-    expect(result.expiry).toBe('2026-09-13');
+    expect(result.expiry).toBe('2029-09-13');
     expect(result.status).toBe('Trial');
   });
 
-  it('2. Extension across month boundary (2026-08-25 + 14 days -> 2026-09-08)', async () => {
+  it('2. Extension across month boundary (2029-08-25 + 14 days -> 2029-09-08)', async () => {
     mockPrisma.subscription.findUnique.mockResolvedValue({
       id: 'SUB-2',
       company: 'Acme Corp',
       status: 'Trial',
-      expiry: '2026-08-25',
+      expiry: '2029-08-25',
       cycle: 'Trial',
     });
 
     const result = await service.extendTrial('SUB-2');
 
-    expect(result.expiry).toBe('2026-09-08');
+    expect(result.expiry).toBe('2029-09-08');
     expect(result.status).toBe('Trial');
   });
 
-  it('3. Extension across year boundary (2026-12-25 + 14 days -> 2027-01-08)', async () => {
+  it('3. Extension across year boundary (2029-12-25 + 14 days -> 2030-01-08)', async () => {
     mockPrisma.subscription.findUnique.mockResolvedValue({
       id: 'SUB-3',
       company: 'Acme Corp',
       status: 'Trial',
-      expiry: '2026-12-25',
+      expiry: '2029-12-25',
       cycle: 'Trial',
     });
 
     const result = await service.extendTrial('SUB-3');
 
-    expect(result.expiry).toBe('2027-01-08');
+    expect(result.expiry).toBe('2030-01-08');
     expect(result.status).toBe('Trial');
   });
 
@@ -99,13 +99,13 @@ describe('SubscriptionUsageService - extendTrial Hardening Specs (F-01)', () => 
       id: 'SUB-4',
       company: 'Acme Corp',
       status: 'Trial',
-      expiry: '2026-08-30',
+      expiry: '2029-08-30',
       cycle: 'Trial',
     });
 
     const result = await service.extendTrial('SUB-4');
 
-    expect(result.expiry).toBe('2026-09-20');
+    expect(result.expiry).toBe('2029-09-20');
     expect(mockSystemConfigService.getConfiguredTrialDays).toHaveBeenCalled();
   });
 
@@ -114,13 +114,13 @@ describe('SubscriptionUsageService - extendTrial Hardening Specs (F-01)', () => 
       id: 'SUB-5',
       company: 'Acme Corp',
       status: 'Trial',
-      expiry: '2026-08-30',
+      expiry: '2029-08-30',
       cycle: 'Trial',
     });
 
     const result = await service.extendTrial('SUB-5', 7);
 
-    expect(result.expiry).toBe('2026-09-06');
+    expect(result.expiry).toBe('2029-09-06');
   });
 
   it('6. Expired trial sub (expiry in the past) anchors strictly to max(sub.expiry, today)', async () => {

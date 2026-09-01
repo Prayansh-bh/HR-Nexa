@@ -108,6 +108,7 @@ describe('PerformanceReviewService - F-02 Lifecycle & HR Override Preservation S
         hrScore: 3.8,
         remarks: 'Auto-calculated from attendance records',
       },
+      'comp-1',
     );
   });
 
@@ -224,6 +225,7 @@ describe('PerformanceReviewService - F-02 Lifecycle & HR Override Preservation S
       'rev-4',
       'crit-att',
       expect.objectContaining({ hrScore: 4.0 }),
+      'comp-1',
     );
 
     // Tech skills is untouched

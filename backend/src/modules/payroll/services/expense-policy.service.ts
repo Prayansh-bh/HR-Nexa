@@ -9,6 +9,7 @@ export class ExpensePolicyService {
   async validateAndEnforceCategoryPolicy(
     companyId: string,
     items: Array<{ categoryId: string; amount: number; receiptDocumentId?: string }>,
+    employeeId?: string,
   ) {
     const validatedItems: Array<{
       categoryId: string;
@@ -34,6 +35,34 @@ export class ExpensePolicyService {
 
       if (category.requireReceipt && !item.receiptDocumentId) {
         throw new BadRequestException(`Category '${category.name}' requires a valid proof receipt document.`);
+      }
+
+      if (item.receiptDocumentId) {
+        const doc = await this.expenseClaimRepository.findDocumentByIdAndTenant(
+          item.receiptDocumentId,
+          companyId,
+        );
+        if (!doc) {
+          throw new BadRequestException(
+            `Receipt document ID "${item.receiptDocumentId}" not found or belongs to another tenant.`,
+          );
+        }
+
+        if (!employeeId) {
+          throw new BadRequestException('Employee context is required to validate expense receipt attachment.');
+        }
+
+        if (doc.category !== 'EXPENSE_RECEIPT') {
+          throw new BadRequestException(
+            `Attached document ID "${item.receiptDocumentId}" is not categorized as an EXPENSE_RECEIPT.`,
+          );
+        }
+
+        if (doc.employeeId !== employeeId) {
+          throw new BadRequestException(
+            `Receipt document ID "${item.receiptDocumentId}" does not belong to the claiming employee.`,
+          );
+        }
       }
 
       const taxTreatment: ExpenseTaxTreatment = category.isTaxable ? 'TAXABLE' : 'NON_TAXABLE';

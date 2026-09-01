@@ -144,6 +144,20 @@ export class DocumentsController {
       }
     }
 
+    const ALLOWED_ACCOUNTANT_CATEGORIES = [
+      'EXPENSE_RECEIPT',
+      'TAX_DECLARATION',
+      'COMPLIANCE',
+    ];
+
+    if ((user.role as Role) === Role.Accountant) {
+      if (!ALLOWED_ACCOUNTANT_CATEGORIES.includes(doc.category)) {
+        throw new ForbiddenException(
+          'Accountants are only authorized to download financial, tax declaration, and expense receipt documents',
+        );
+      }
+    }
+
     const { doc: documentRecord, streamOrBuffer } = await this.service.download(id, scope);
 
     // If file exists on local filesystem path, stream directly via res.download
@@ -202,6 +216,20 @@ export class DocumentsController {
     const safeDocType = docType && docType.trim() ? docType.trim() : undefined;
     const safeSearch = search && search.trim() ? search.trim() : undefined;
 
+    const ALLOWED_ACCOUNTANT_CATEGORIES = [
+      'EXPENSE_RECEIPT',
+      'TAX_DECLARATION',
+      'COMPLIANCE',
+    ];
+
+    if ((user.role as Role) === Role.Accountant) {
+      if (safeCategory && !ALLOWED_ACCOUNTANT_CATEGORIES.includes(safeCategory)) {
+        throw new ForbiddenException(
+          'Accountants are only authorized to access financial, tax declaration, and expense receipt documents',
+        );
+      }
+    }
+
     if ((user.role as Role) === Role.Employee) {
       return this.service.findAll(
         scope,
@@ -243,6 +271,21 @@ export class DocumentsController {
       user.employee?.id !== doc.employeeId
     ) {
       throw new ForbiddenException('You can only access your own documents');
+    }
+
+    const ALLOWED_ACCOUNTANT_CATEGORIES = [
+      'EXPENSE_RECEIPT',
+      'TAX_DECLARATION',
+      'COMPLIANCE',
+    ];
+
+    if (
+      (user.role as Role) === Role.Accountant &&
+      !ALLOWED_ACCOUNTANT_CATEGORIES.includes(doc.category)
+    ) {
+      throw new ForbiddenException(
+        'Accountants are only authorized to access financial, tax declaration, and expense receipt documents',
+      );
     }
     return doc;
   }

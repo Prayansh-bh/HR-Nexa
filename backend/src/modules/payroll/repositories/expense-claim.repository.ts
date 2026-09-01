@@ -49,6 +49,12 @@ export class ExpenseClaimRepository {
     });
   }
 
+  async findDocumentByIdAndTenant(id: string, companyId: string) {
+    return (this.prisma as any).document.findFirst({
+      where: { id, companyId },
+    });
+  }
+
   async createCategory(companyId: string, data: any) {
     return this.categoryDelegate.create({
       data: {

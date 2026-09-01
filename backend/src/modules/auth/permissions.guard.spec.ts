@@ -31,6 +31,7 @@ describe('PermissionsGuard', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    PermissionsGuard.clearCache();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -106,14 +107,14 @@ describe('PermissionsGuard', () => {
     });
 
     mockPrismaService.permission.findUnique.mockResolvedValue({
-      feature: { key: 'PAY_BASIC' },
+      feature: { key: 'PAYROLL_BASIC' },
     });
     mockPrismaService.companyPlanAssignment.findUnique.mockResolvedValue(null);
     mockPrismaService.saaSPlanNew.findUnique.mockResolvedValue({
       versions: [{ id: 'version-prem-1' }],
     });
     mockPrismaService.planVersion.findUnique.mockResolvedValue({
-      features: [{ feature: { key: 'PAY_BASIC' } }],
+      features: [{ feature: { key: 'PAYROLL_BASIC' } }],
     });
 
     const result = await guard.canActivate(context);
@@ -133,7 +134,7 @@ describe('PermissionsGuard', () => {
     });
 
     mockPrismaService.permission.findUnique.mockResolvedValue({
-      feature: { key: 'PAY_BASIC' },
+      feature: { key: 'PAYROLL_BASIC' },
     });
     mockPrismaService.companyPlanAssignment.findUnique.mockResolvedValue(null);
     mockPrismaService.saaSPlanNew.findUnique.mockResolvedValue({
