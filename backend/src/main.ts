@@ -34,10 +34,25 @@ async function bootstrap() {
         ? {
             directives: {
               defaultSrc: ["'self'"],
-              scriptSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'"],
+              workerSrc: ["'self'", 'blob:'],
+              childSrc: ["'self'", 'blob:'],
               styleSrc: ["'self'", "'unsafe-inline'"],
-              imgSrc: ["'self'", 'data:', 'blob:'],
-              connectSrc: ["'self'"],
+              imgSrc: [
+                "'self'",
+                'data:',
+                'blob:',
+                'https://tiles.openfreemap.org',
+                'https://*.tile.openstreetmap.org',
+              ],
+              connectSrc: [
+                "'self'",
+                'https://tiles.openfreemap.org',
+                'https://nominatim.openstreetmap.org',
+                'https://api.hrnexa.com',
+                'https://app.hrnexa.com',
+                'https://owner.hrnexa.com',
+              ],
             },
           }
         : false, // Disables CSP in development to preserve Swagger UI inline scripts
