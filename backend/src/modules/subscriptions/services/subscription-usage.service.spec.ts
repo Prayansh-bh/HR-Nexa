@@ -4,6 +4,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { PasswordResetService } from '../../auth/services/password-reset.service';
 import { AuditLoggerService } from '../../../common/audit/audit-logger.service';
 import { SystemConfigService } from '../../system/services/system-config.service';
+import { EmployeeCountSyncService } from './employee-count-sync.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('SubscriptionUsageService - Reset Admin Password Spec', () => {
@@ -53,6 +54,7 @@ describe('SubscriptionUsageService - Reset Admin Password Spec', () => {
         SubscriptionUsageService,
         { provide: PrismaService, useValue: prisma },
         { provide: PasswordResetService, useValue: passwordResetService },
+        { provide: EmployeeCountSyncService, useValue: {} },
         { provide: AuditLoggerService, useValue: {} },
         { provide: SystemConfigService, useValue: {} },
       ],

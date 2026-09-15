@@ -29,6 +29,7 @@ describe('SubscriptionUsageService - extendTrial Hardening Specs (F-01)', () => 
       mockPrisma,
       { requestPasswordResetForUser: jest.fn() } as any,
       undefined,
+      undefined,
       mockSystemConfigService,
     );
   });

@@ -14,14 +14,22 @@ import {
 
 import { SystemConfigService } from '../../system/services/system-config.service';
 import { PasswordResetService } from '../../auth/services/password-reset.service';
+import { EmployeeCountSyncService } from './employee-count-sync.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  COMPANY_EVENTS,
+  SeatCountUpdatedEvent,
+} from '../../../common/events/company.events';
 
 @Injectable()
 export class SubscriptionUsageService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwordResetService: PasswordResetService,
+    @Optional() private readonly employeeCountSyncService?: EmployeeCountSyncService,
     @Optional() private readonly auditLogger?: AuditLoggerService,
     @Optional() private readonly systemConfigService?: SystemConfigService,
+    @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {}
 
   private gbToMB(gb: number): number {
@@ -299,6 +307,97 @@ export class SubscriptionUsageService {
       }
 
       return updatedSub;
+    });
+  }
+
+  async updatePurchasedSeats(id: string, seats: number, actor?: any) {
+    if (!Number.isInteger(seats) || seats < 1) {
+      throw new BadRequestException('Purchased seats must be a positive integer >= 1.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const sub = await tx.subscription.findUnique({ where: { id } });
+      if (!sub) {
+        throw new NotFoundException(`Subscription record with ID "${id}" not found`);
+      }
+
+      const companyId = sub.companyId || sub.id;
+      let activeEmployeeCount = 0;
+      if (this.employeeCountSyncService) {
+        activeEmployeeCount = await this.employeeCountSyncService.getActiveEmployeeCount(
+          companyId,
+          tx,
+        );
+      } else {
+        activeEmployeeCount = await tx.employee.count({
+          where: {
+            OR: [{ companyId }, { subscriptionId: companyId }],
+            status: { in: ['Active', 'ACTIVE', 'On Leave'] },
+          },
+        });
+      }
+
+      if (seats < activeEmployeeCount) {
+        throw new BadRequestException({
+          statusCode: 400,
+          error: 'Bad Request',
+          errorCode: 'SEATS_BELOW_ACTIVE_EMPLOYEES',
+          message: `Cannot reduce seats below the current active employee count (${activeEmployeeCount}).`,
+          purchasedSeats: seats,
+          activeEmployeeCount,
+        });
+      }
+
+      const previousSeats = sub.purchasedSeats ?? 10;
+      const effectiveUsedSeats = Math.min(activeEmployeeCount, seats);
+
+      const updated = await tx.subscription.update({
+        where: { id },
+        data: {
+          purchasedSeats: seats,
+          usedSeats: effectiveUsedSeats,
+          employeesCount: activeEmployeeCount,
+        },
+      });
+
+      // Record subscription event
+      await tx.subscriptionEvent
+        .create({
+          data: {
+            subscriptionId: id,
+            event: 'SeatsUpdated',
+            fromPlan: sub.plan,
+            toPlan: sub.plan,
+            fromStatus: sub.status,
+            toStatus: sub.status,
+            performedBy: actor?.name || actor?.email || 'SuperAdmin',
+            note: `Updated purchased seats from ${previousSeats} to ${seats} (Active employees: ${activeEmployeeCount})`,
+          },
+        })
+        .catch(() => null);
+
+      if (this.eventEmitter) {
+        this.eventEmitter.emit(
+          COMPANY_EVENTS.SEAT_COUNT_UPDATED,
+          new SeatCountUpdatedEvent(
+            sub.id,
+            companyId,
+            effectiveUsedSeats,
+            seats,
+          ),
+        );
+      }
+
+      return {
+        id: updated.id,
+        company: updated.company,
+        companyId: updated.companyId,
+        purchasedSeats: updated.purchasedSeats,
+        activeEmployeeCount,
+        availableSeats: Math.max(0, (updated.purchasedSeats ?? 0) - activeEmployeeCount),
+        status: updated.status,
+        plan: updated.plan,
+      };
     });
   }
 

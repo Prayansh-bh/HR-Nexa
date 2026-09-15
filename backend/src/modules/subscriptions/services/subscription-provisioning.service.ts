@@ -490,7 +490,7 @@ export class SubscriptionProvisioningService {
               subject: `Welcome to HR NEXA — ${data.company}`,
               body: `Welcome ${adminName}! Your temp password is: ${tempPassword}`,
               companyId: createdCompany.id,
-              actor: { id: existingUser?.id || 'system', role: 'HRAdmin' },
+              actor: { id: hrAdminUser?.id || existingUser?.id || 'system', role: 'HRAdmin' },
             });
           }
         },

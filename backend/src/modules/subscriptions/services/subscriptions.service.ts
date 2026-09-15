@@ -163,6 +163,10 @@ export class SubscriptionsService {
     return this.usageService.resetPassword(id);
   }
 
+  async updatePurchasedSeats(id: string, seats: number, actor?: any) {
+    return this.usageService.updatePurchasedSeats(id, seats, actor);
+  }
+
   async editProfile(id: string, data: any) {
     return this.usageService.editProfile(id, data);
   }

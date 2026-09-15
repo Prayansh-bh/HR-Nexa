@@ -41,6 +41,7 @@ import {
 import { StorageService } from '../../../common/storage/storage.service';
 import { Permission } from '../../auth/permissions.enum';
 import { canUserDelegateRole } from '../../../common/tenant/tenant-validation.util';
+import { EmailService } from '../../../email/email.service';
 
 @Injectable()
 export class EmployeesService {
@@ -55,6 +56,7 @@ export class EmployeesService {
     private readonly eventEmitter: EventEmitter2,
     @Optional() private readonly tenantContextService?: TenantContextService,
     @Optional() private readonly storageService?: StorageService,
+    @Optional() private readonly emailService?: EmailService,
   ) {}
 
   private getTenantId(currentUser: any): string | null {
@@ -379,6 +381,7 @@ export class EmployeesService {
     for (let attempt = 1; attempt <= MAX_ID_RETRIES; attempt++) {
       try {
         let createdUserId: string | null = null;
+        let generatedTempPassword: string | null = null;
 
         const created = await this.prisma.$transaction(async (tx) => {
           // 1. Authoritative seat limit check inside transaction
@@ -396,7 +399,7 @@ export class EmployeesService {
 
           // 3. Create or update User INSIDE the transaction (Fix #2: eliminates orphan user records on rollback)
           if (createDto.createAccount !== false) {
-            createdUserId =
+            const userLinkResult =
               await this.employeeUserLinkService.getOrCreateUserForEmployee({
                 email: createDto.email,
                 name: createDto.name,
@@ -407,6 +410,15 @@ export class EmployeesService {
                 prismaClient: tx,
                 deferWelcomeEmail: true,
               });
+
+            createdUserId =
+              typeof userLinkResult === 'object' && userLinkResult !== null
+                ? userLinkResult.userId
+                : (userLinkResult as any);
+            generatedTempPassword =
+              typeof userLinkResult === 'object' && userLinkResult !== null
+                ? userLinkResult.tempPassword || null
+                : null;
           }
 
           // 4. Create the employee record
@@ -441,6 +453,35 @@ export class EmployeesService {
             companyId,
           ),
         );
+
+        // Post-transaction welcome email dispatch (non-blocking, failure will not roll back employee creation)
+        if (createdUserId && generatedTempPassword && this.emailService) {
+          void this.emailService
+            .sendWelcomeEmail(
+              createDto.email,
+              createDto.name,
+              subscription?.company || 'HR Nexa Partner',
+              generatedTempPassword,
+              false,
+              companyId || undefined,
+            )
+            .then((sent) => {
+              if (sent) {
+                this.logger.log(
+                  `Employee welcome email successfully dispatched via SMTP to ${createDto.email}`,
+                );
+              } else {
+                this.logger.warn(
+                  `Employee welcome email dispatch returned false for ${createDto.email}`,
+                );
+              }
+            })
+            .catch((err) => {
+              this.logger.error(
+                `Failed to dispatch employee welcome email to ${createDto.email}: ${err.message}`,
+              );
+            });
+        }
 
         if (createdUserId) {
           const resolvedRole = createDto.roleId

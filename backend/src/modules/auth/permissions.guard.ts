@@ -62,7 +62,7 @@ export class PermissionsGuard implements CanActivate {
     }
 
     // Flow Step 1: SuperAdmin root bypass
-    if (user.role === 'SuperAdmin' || user.role === 'CompanyOwner') {
+    if (user.role === 'SuperAdmin') {
       return true;
     }
 
@@ -101,8 +101,7 @@ export class PermissionsGuard implements CanActivate {
           userPermissions.includes('payroll:read') ||
           userPermissions.includes('payroll:process') ||
           userPermissions.includes('payroll:process:view') ||
-          userPermissions.includes('payroll:process:run') ||
-          user.role === 'HRAdmin'
+          userPermissions.includes('payroll:process:run')
         );
       }
       if (
@@ -121,9 +120,7 @@ export class PermissionsGuard implements CanActivate {
       ) {
         return (
           userPermissions.includes('system:audit:read') ||
-          userPermissions.includes('system:audit:view') ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner'
+          userPermissions.includes('system:audit:view')
         );
       }
       if (
@@ -140,36 +137,19 @@ export class PermissionsGuard implements CanActivate {
         );
       }
       if (permission === 'system:announcement:create') {
-        return (
-          userPermissions.includes('system:announcement:create') ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner'
-        );
+        return userPermissions.includes('system:announcement:create');
       }
       if (permission === 'settings:roles:view') {
-        return (
-          userPermissions.includes('settings:roles:view') ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner'
-        );
+        return userPermissions.includes('settings:roles:view');
       }
       if (permission === 'settings:roles:edit') {
-        return (
-          userPermissions.includes('settings:roles:edit') ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner'
-        );
+        return userPermissions.includes('settings:roles:edit');
       }
       if (
         permission === 'settings:company:view' ||
         permission === 'settings:company:edit'
       ) {
-        return (
-          userPermissions.includes(permission) ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner' ||
-          user.role === 'Accountant'
-        );
+        return userPermissions.includes(permission);
       }
       if (
         permission === 'employees:departments:manage' ||
@@ -180,9 +160,7 @@ export class PermissionsGuard implements CanActivate {
           userPermissions.includes('departments:manage') ||
           userPermissions.includes('departments:read') ||
           userPermissions.includes('employees:list:view') ||
-          userPermissions.includes('employees:read') ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner'
+          userPermissions.includes('employees:read')
         );
       }
       if (permission === 'employees:designations:manage') {
@@ -190,9 +168,7 @@ export class PermissionsGuard implements CanActivate {
           userPermissions.includes('employees:designations:manage') ||
           userPermissions.includes('departments:read') ||
           userPermissions.includes('employees:list:view') ||
-          userPermissions.includes('employees:read') ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner'
+          userPermissions.includes('employees:read')
         );
       }
       if (
@@ -203,9 +179,7 @@ export class PermissionsGuard implements CanActivate {
           userPermissions.includes('employees:profile:docs:upload') ||
           userPermissions.includes('documents:write') ||
           userPermissions.includes('recruitment:candidates:hire') ||
-          userPermissions.includes('recruitment:candidates:movestage') ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner'
+          userPermissions.includes('recruitment:candidates:movestage')
         );
       }
       if (
@@ -217,16 +191,56 @@ export class PermissionsGuard implements CanActivate {
           userPermissions.includes('documents:read') ||
           userPermissions.includes('expenses:claims:manage') ||
           userPermissions.includes('expenses:claims:view') ||
-          user.role === 'Accountant' ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner'
+          userPermissions.includes('expenses:manage') ||
+          userPermissions.includes('expenses:view')
         );
       }
       if (permission === 'documents:verify') {
+        return userPermissions.includes('documents:verify');
+      }
+      if (
+        permission === 'expenses:claims:view' ||
+        permission === 'expenses:view'
+      ) {
         return (
-          userPermissions.includes('documents:verify') ||
-          user.role === 'HRAdmin' ||
-          user.role === 'CompanyOwner'
+          userPermissions.includes('expenses:claims:view') ||
+          userPermissions.includes('expenses:view')
+        );
+      }
+      if (
+        permission === 'expenses:claims:submit' ||
+        permission === 'expenses:submit'
+      ) {
+        return (
+          userPermissions.includes('expenses:claims:submit') ||
+          userPermissions.includes('expenses:submit')
+        );
+      }
+      if (
+        permission === 'expenses:claims:approve' ||
+        permission === 'expenses:approve'
+      ) {
+        return (
+          userPermissions.includes('expenses:claims:approve') ||
+          userPermissions.includes('expenses:approve')
+        );
+      }
+      if (
+        permission === 'expenses:claims:manage' ||
+        permission === 'expenses:manage'
+      ) {
+        return (
+          userPermissions.includes('expenses:claims:manage') ||
+          userPermissions.includes('expenses:manage')
+        );
+      }
+      if (
+        permission === 'expenses:claims:pay' ||
+        permission === 'expenses:pay'
+      ) {
+        return (
+          userPermissions.includes('expenses:claims:pay') ||
+          userPermissions.includes('expenses:pay')
         );
       }
       return false;

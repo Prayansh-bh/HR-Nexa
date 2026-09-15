@@ -178,7 +178,7 @@ describe('SubscriptionLifecycleService - renewSubscription & Duration Specs (P0 
           company: 'Acme Active',
           plan: 'Professional',
           status: 'Active',
-          expiry: '2026-09-01',
+          expiry: '2026-12-01',
           cycle: 'Monthly',
         },
       ]);
@@ -188,13 +188,13 @@ describe('SubscriptionLifecycleService - renewSubscription & Duration Specs (P0 
       expect(mockTx.subscription.update).toHaveBeenCalledWith({
         where: { id: 'SUB-ACT-14' },
         data: expect.objectContaining({
-          start: '2026-09-01',
-          expiry: '2026-09-15',
+          start: '2026-12-01',
+          expiry: '2026-12-15',
           amount: 0,
           cycle: BillingCycle.TRIAL,
         }),
       });
-      expect(result.expiry).toBe('2026-09-15');
+      expect(result.expiry).toBe('2026-12-15');
       expect(mockTx.invoice.create).not.toHaveBeenCalled();
     });
 
@@ -205,7 +205,7 @@ describe('SubscriptionLifecycleService - renewSubscription & Duration Specs (P0 
           company: 'Acme Monthly',
           plan: 'Professional',
           status: 'Active',
-          expiry: '2026-09-01',
+          expiry: '2026-12-01',
           cycle: 'Monthly',
         },
       ]);
@@ -215,8 +215,8 @@ describe('SubscriptionLifecycleService - renewSubscription & Duration Specs (P0 
       expect(mockTx.subscription.update).toHaveBeenCalledWith({
         where: { id: 'SUB-ACT-1M' },
         data: expect.objectContaining({
-          start: '2026-09-01',
-          expiry: '2026-10-01',
+          start: '2026-12-01',
+          expiry: '2027-01-01',
           amount: 4999,
           cycle: BillingCycle.MONTHLY,
           status: SubscriptionStatus.PAID,
@@ -226,7 +226,7 @@ describe('SubscriptionLifecycleService - renewSubscription & Duration Specs (P0 
       expect(mockTx.invoice.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: { status: 'Paid' } }),
       );
-      expect(result.expiry).toBe('2026-10-01');
+      expect(result.expiry).toBe('2027-01-01');
     });
 
     it('3. Active subscription + 1 year renewal advances 1 calendar year', async () => {
@@ -236,7 +236,7 @@ describe('SubscriptionLifecycleService - renewSubscription & Duration Specs (P0 
           company: 'Acme Yearly',
           plan: 'Professional',
           status: 'Active',
-          expiry: '2026-09-01',
+          expiry: '2026-12-01',
           cycle: 'Annual',
         },
       ]);
@@ -246,14 +246,14 @@ describe('SubscriptionLifecycleService - renewSubscription & Duration Specs (P0 
       expect(mockTx.subscription.update).toHaveBeenCalledWith({
         where: { id: 'SUB-ACT-1Y' },
         data: expect.objectContaining({
-          start: '2026-09-01',
-          expiry: '2027-09-01',
+          start: '2026-12-01',
+          expiry: '2027-12-01',
           amount: 49990,
           cycle: BillingCycle.ANNUAL,
           status: SubscriptionStatus.ACTIVE,
         }),
       });
-      expect(result.expiry).toBe('2027-09-01');
+      expect(result.expiry).toBe('2027-12-01');
     });
 
     it('4. Expired yesterday + 14 days renewal anchors to today (never stays in the past)', async () => {

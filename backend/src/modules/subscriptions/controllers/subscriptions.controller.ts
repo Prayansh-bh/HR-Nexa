@@ -3,6 +3,7 @@ import {
   Get,
   Put,
   Post,
+  Patch,
   Delete,
   Body,
   Param,
@@ -28,6 +29,7 @@ import { CreateCouponDto, ApplyCouponDto } from './dto/coupon.dto';
 import { AddStorageDto } from './dto/add-storage.dto';
 import { RenewSubscriptionDto, ExtendTrialDto } from './dto/renew-subscription.dto';
 import { UpdateCompanyProfileDto } from './dto/update-company-profile.dto';
+import { UpdateSeatsDto } from './dto/update-seats.dto';
 import { AuthenticatedRequest } from '../../auth/interfaces/authenticated-request.interface';
 
 @ApiTags('Subscriptions')
@@ -252,6 +254,16 @@ export class SubscriptionsController {
   @Roles(Role.SuperAdmin)
   async markInvoicePaid(@Param('id') id: string) {
     return this.subscriptionsService.markInvoicePaid(id);
+  }
+
+  @Patch(':id/seats')
+  @Roles(Role.SuperAdmin)
+  async updateSeats(
+    @Param('id') id: string,
+    @Body() body: UpdateSeatsDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.subscriptionsService.updatePurchasedSeats(id, body.seats, req.user);
   }
 
   @Put(':id/profile')

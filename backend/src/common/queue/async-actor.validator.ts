@@ -22,10 +22,17 @@ export class AsyncActorValidatorService {
    */
   async validateActor(context: CanonicalJobContext): Promise<void> {
     // 1. System Execution Exemption
-    if (
-      context.executionScope === 'PLATFORM' &&
-      (context.actorUserId === 'SYSTEM' || context.actorUserId === 'system')
-    ) {
+    const isSystemUser =
+      context.actorUserId === 'SYSTEM' ||
+      context.actorUserId === 'system' ||
+      context.actorUserId === 'system-cron';
+    const isSystemRole =
+      context.actorRole === 'SYSTEM' ||
+      context.actorRole === 'SYSTEM_SCHEDULER' ||
+      context.actorRole === 'SuperAdmin' ||
+      !context.actorRole;
+
+    if (isSystemUser && isSystemRole) {
       return;
     }
 

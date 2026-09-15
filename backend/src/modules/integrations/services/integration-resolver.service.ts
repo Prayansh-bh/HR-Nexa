@@ -25,20 +25,34 @@ export class IntegrationResolverService {
   /**
    * Resolve Razorpay Credentials.
    * Order:
-   * 1. Enabled DB IntegrationCredential record (platform companyId = null).
+   * 1. Enabled Tenant DB IntegrationCredential record (if companyId provided).
+   * 2. Enabled Platform DB IntegrationCredential record (companyId = null).
    *    If DB record exists and is active, attempt decryption. If decryption/validation fails -> FAIL FAST (no .env fallback!).
-   * 2. process.env fallback (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET) if no active DB record exists.
+   * 3. process.env fallback (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET) if no active DB record exists.
    */
   public async resolveRazorpay(
     companyId: string | null = null,
   ): Promise<ResolvedRazorpayCredentials> {
-    const record: IntegrationCredential | null = await this.dbModel.findFirst({
-      where: {
-        provider: IntegrationProvider.RAZORPAY,
-        companyId,
-        enabled: true,
-      },
-    });
+    let record: IntegrationCredential | null = null;
+    if (companyId) {
+      record = await this.dbModel.findFirst({
+        where: {
+          provider: IntegrationProvider.RAZORPAY,
+          companyId,
+          enabled: true,
+        },
+      });
+    }
+
+    if (!record) {
+      record = await this.dbModel.findFirst({
+        where: {
+          provider: IntegrationProvider.RAZORPAY,
+          companyId: null,
+          enabled: true,
+        },
+      });
+    }
 
     if (!record) {
       return {
@@ -79,20 +93,34 @@ export class IntegrationResolverService {
   /**
    * Resolve AWS S3 Credentials.
    * Order:
-   * 1. Enabled DB IntegrationCredential record (platform companyId = null).
+   * 1. Enabled Tenant DB IntegrationCredential record (if companyId provided).
+   * 2. Enabled Platform DB IntegrationCredential record (companyId = null).
    *    If DB record exists and is active, attempt decryption. If decryption/validation fails -> FAIL FAST (no .env fallback!).
-   * 2. process.env fallback (AWS_REGION, AWS_S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) if no active DB record exists.
+   * 3. process.env fallback (AWS_REGION, AWS_S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) if no active DB record exists.
    */
   public async resolveAwsS3(
     companyId: string | null = null,
   ): Promise<ResolvedAwsS3Credentials> {
-    const record: IntegrationCredential | null = await this.dbModel.findFirst({
-      where: {
-        provider: IntegrationProvider.AWS_S3,
-        companyId,
-        enabled: true,
-      },
-    });
+    let record: IntegrationCredential | null = null;
+    if (companyId) {
+      record = await this.dbModel.findFirst({
+        where: {
+          provider: IntegrationProvider.AWS_S3,
+          companyId,
+          enabled: true,
+        },
+      });
+    }
+
+    if (!record) {
+      record = await this.dbModel.findFirst({
+        where: {
+          provider: IntegrationProvider.AWS_S3,
+          companyId: null,
+          enabled: true,
+        },
+      });
+    }
 
     if (!record) {
       return {
@@ -135,20 +163,34 @@ export class IntegrationResolverService {
   /**
    * Resolve SMTP Email Credentials.
    * Order:
-   * 1. Enabled DB IntegrationCredential record (platform companyId = null).
+   * 1. Enabled Tenant DB IntegrationCredential record (if companyId provided).
+   * 2. Enabled Platform DB IntegrationCredential record (companyId = null).
    *    If DB record exists and is active, attempt decryption. If decryption/validation fails -> FAIL FAST (no .env fallback!).
-   * 2. process.env fallback (EMAIL_HOST, EMAIL_PORT, EMAIL_SECURE, EMAIL_USER, EMAIL_PASS, EMAIL_FROM, EMAIL_NAME) if no active DB record exists.
+   * 3. process.env fallback (EMAIL_HOST, EMAIL_PORT, EMAIL_SECURE, EMAIL_USER, EMAIL_PASS, EMAIL_FROM, EMAIL_NAME) if no active DB record exists.
    */
   public async resolveSmtp(
     companyId: string | null = null,
   ): Promise<ResolvedSmtpCredentials> {
-    const record: IntegrationCredential | null = await this.dbModel.findFirst({
-      where: {
-        provider: IntegrationProvider.SMTP_EMAIL,
-        companyId,
-        enabled: true,
-      },
-    });
+    let record: IntegrationCredential | null = null;
+    if (companyId) {
+      record = await this.dbModel.findFirst({
+        where: {
+          provider: IntegrationProvider.SMTP_EMAIL,
+          companyId,
+          enabled: true,
+        },
+      });
+    }
+
+    if (!record) {
+      record = await this.dbModel.findFirst({
+        where: {
+          provider: IntegrationProvider.SMTP_EMAIL,
+          companyId: null,
+          enabled: true,
+        },
+      });
+    }
 
     if (!record) {
       return {

@@ -4,6 +4,11 @@ import { PasswordService } from '../../auth/services/password.service';
 import { EmailService } from '../../../email/email.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 
+export interface CreatedEmployeeUserResult {
+  userId: string;
+  tempPassword?: string;
+}
+
 @Injectable()
 export class EmployeeUserLinkService {
   private readonly logger = new Logger(EmployeeUserLinkService.name);
@@ -24,7 +29,7 @@ export class EmployeeUserLinkService {
     subscriptionId: string | null;
     prismaClient?: any;
     deferWelcomeEmail?: boolean;
-  }): Promise<string> {
+  }): Promise<CreatedEmployeeUserResult> {
     const {
       email,
       name,
@@ -156,7 +161,7 @@ export class EmployeeUserLinkService {
         });
     }
 
-    return userId;
+    return { userId, tempPassword };
   }
 
   async updateLinkedUser(

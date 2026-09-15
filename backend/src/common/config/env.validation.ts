@@ -224,5 +224,15 @@ export function validateEnv(config: Record<string, unknown>) {
     }
   }
 
+  // Encryption Key Format Validation (AES-256-GCM Integration Security)
+  if (config.ENCRYPTION_KEY !== undefined && config.ENCRYPTION_KEY !== null && config.ENCRYPTION_KEY !== '') {
+    const encKey = typeof config.ENCRYPTION_KEY === 'string' ? config.ENCRYPTION_KEY.trim() : '';
+    if (encKey.length !== 64 && Buffer.from(encKey, 'utf8').length !== 32) {
+      throw new Error(
+        'Environment validation error: ENCRYPTION_KEY must be a 64-character hex string or 32-byte UTF-8 string',
+      );
+    }
+  }
+
   return validatedConfig;
 }

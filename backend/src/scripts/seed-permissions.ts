@@ -12,8 +12,6 @@ export const PLATFORM_CORE_PERMISSIONS = new Set<string>([
   'settings:roles:view',
   'settings:roles:edit',
   'system:announcement:create',
-  'system:audit:view',
-  'system:audit:read',
 ]);
 
 export const permissionToFeatureKey: Record<string, string> = {
@@ -98,7 +96,12 @@ export const permissionToFeatureKey: Record<string, string> = {
   'tax:declarations:submit': 'TAX_DECLARATIONS',
   'tax:declarations:manage': 'TAX_DECLARATIONS',
 
-  // 9. EXPENSE_CLAIMS
+  // 9. EXPENSE_CLAIMS (Canonical keys + legacy compatibility aliases)
+  'expenses:claims:view': 'EXPENSE_CLAIMS',
+  'expenses:claims:submit': 'EXPENSE_CLAIMS',
+  'expenses:claims:approve': 'EXPENSE_CLAIMS',
+  'expenses:claims:manage': 'EXPENSE_CLAIMS',
+  'expenses:claims:pay': 'EXPENSE_CLAIMS',
   'expenses:view': 'EXPENSE_CLAIMS',
   'expenses:submit': 'EXPENSE_CLAIMS',
   'expenses:approve': 'EXPENSE_CLAIMS',
