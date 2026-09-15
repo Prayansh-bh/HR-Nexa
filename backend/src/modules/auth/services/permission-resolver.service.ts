@@ -28,13 +28,12 @@ export class PermissionResolver {
     // Fallback Phase: If roleRelation is null or not pre-loaded, resolve from Role table by name & companyId
     if (!roleRecord) {
       if (user.roleId) {
-        const candidate = await this.prisma.role.findUnique({
-          where: { id: user.roleId },
+        roleRecord = await this.prisma.role.findFirst({
+          where: {
+            id: user.roleId,
+            companyId: user.companyId,
+          },
         });
-        // Tenant boundary check: candidate role must be tenant-neutral (companyId: null) or match user's companyId
-        if (candidate && (!candidate.companyId || candidate.companyId === user.companyId)) {
-          roleRecord = candidate;
-        }
       }
       if (!roleRecord && user.companyId) {
         roleRecord = await this.prisma.role.findFirst({
@@ -42,11 +41,7 @@ export class PermissionResolver {
         });
       }
       if (!roleRecord) {
-        // Invariant: Unscoped cross-tenant role resolution is forbidden.
-        // Fallback only to global, tenant-neutral system roles (companyId = null, isSystem = true)
-        roleRecord = await this.prisma.role.findFirst({
-          where: { name: user.role, isSystem: true, companyId: null },
-        });
+        return [];
       }
     }
 
